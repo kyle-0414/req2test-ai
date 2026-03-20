@@ -12,9 +12,12 @@ export default function App() {
   // App mostly handles screen switching and passes very minimal state
   const [sourceText, setSourceText] = useState('');
   const [extractedReqs, setExtractedReqs] = useState([]);
+  const [sourceInfo, setSourceInfo] = useState({ name: 'Manual Input', type: 'text', id: 'doc-001', tokens: 0 });
 
-  const startAnalysis = (text) => {
+  const startAnalysis = (text, info) => {
     setSourceText(text);
+    if (info) setSourceInfo(info);
+    else setSourceInfo({ name: 'Manual Input', type: 'text', id: 'doc-001', tokens: Math.ceil(text.length / 4) });
     setScreen('analysis');
   };
 
@@ -26,7 +29,7 @@ export default function App() {
   const renderMain = () => {
     switch (screen) {
       case 'upload':   return <UploadScreen onAnalyze={startAnalysis} text={sourceText} setText={setSourceText} />;
-      case 'analysis': return <AnalysisScreen onGenerateTC={startGenerateTC} sourceText={sourceText} />;
+      case 'analysis': return <AnalysisScreen onGenerateTC={startGenerateTC} sourceText={sourceText} sourceDocumentId={sourceInfo.id} sourceName={sourceInfo.name} tokens={sourceInfo.tokens} isImage={['png', 'jpg'].includes(sourceInfo.type)} />;
       case 'tc':       return <TCScreen requirements={extractedReqs} />;
       default:         return <UploadScreen onAnalyze={startAnalysis} text={sourceText} setText={setSourceText} />;
     }

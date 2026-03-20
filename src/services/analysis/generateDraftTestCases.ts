@@ -24,8 +24,8 @@ export function generateDraftTestCases(
       score: req.automationCandidate ? 85 : 40,
       level: req.automationCandidate ? "high" : "low",
       reasons: req.automationCandidate
-        ? ["명확한 UI 결과", "반복 실행 가치가 높음"]
-        : ["사람의 해석이 많이 필요함"],
+        ? ["명확한 UI 결과", "반복 실행 가치가 높음", ...(req.ambiguityNotes && req.ambiguityNotes.length > 0 ? [`모호함 주의: ${req.ambiguityNotes.join(", ")}`] : [])]
+        : ["사람의 해석이 많이 필요함", ...(req.ambiguityNotes && req.ambiguityNotes.length > 0 ? [`모호함 사유: ${req.ambiguityNotes.join(", ")}`] : [])],
     },
   }));
 }

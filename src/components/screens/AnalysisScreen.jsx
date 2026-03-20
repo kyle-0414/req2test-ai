@@ -3,17 +3,17 @@ import { useAnalysisFlow } from '../../hooks/useAnalysisFlow';
 import { Search, FileText, CheckCircle, AlertTriangle, Cpu, Layers, Edit2, Filter, BookOpen, Zap, AlertCircle, LayoutList, Check, Target, SlidersHorizontal, Eye, AlignLeft } from 'lucide-react';
 import { Badge, ConfBadge } from '../ui/Badges';
 
-export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "doc-001", projectId = "project-001" }) => {
+export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "doc-001", projectId = "project-001", sourceName = "PRD_v1.2.pdf", tokens = 2400, isImage = false }) => {
   const { requirements: reqs, summary, runAnalysis, state } = useAnalysisFlow();
 
   useEffect(() => {
     if (sourceText) {
       runAnalysis(projectId, sourceDocumentId, sourceText);
     }
-  }, [sourceText]);
+  }, [sourceText, sourceDocumentId, projectId]);
 
   const [selectedReqId, setSelectedReqId] = useState(null);
-  const [isOCRMode, setIsOCRMode] = useState(false);
+  const [isOCRMode, setIsOCRMode] = useState(isImage);
 
   useEffect(() => {
     if (reqs.length > 0 && !selectedReqId) {
@@ -123,10 +123,10 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
             
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '11px', fontWeight: '500', color: '#475569', background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <FileText size={10} color="#94a3b8" /> PRD_v1.2.pdf
+                <FileText size={10} color="#94a3b8" /> {sourceName}
               </span>
               <span style={{ fontSize: '11px', fontWeight: '500', color: '#475569', background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <AlignLeft size={10} color="#94a3b8" /> ~2.4k tokens
+                <AlignLeft size={10} color="#94a3b8" /> ~{(tokens / 1000).toFixed(1)}k tokens
               </span>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { AnalysisSummary } from "../../features/analysis/model";
 import { RequirementItem } from "../../features/requirements/model";
+import { analyzeRequirementsWithLLM } from "./analyzeRequirementsWithLLM";
 
 export interface AnalyzeRequirementsResult {
   requirements: RequirementItem[];
@@ -33,7 +34,22 @@ export async function analyzeRequirements(
   sourceDocumentId: string,
   text: string
 ): Promise<AnalyzeRequirementsResult> {
-  // Heuristic-based extraction for MVP mock phase
+
+  // 1. Try LLM path first
+  try {
+    console.log("[analyzeRequirements] Attempting LLM-based requirement analysis...");
+    const result = await analyzeRequirementsWithLLM(projectId, sourceDocumentId, text);
+    console.log("[analyzeRequirements] LLM-based analysis succeeded.");
+    return result;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn("[analyzeRequirements] LLM analysis failed, falling back to heuristic:", error.message);
+    } else {
+      console.warn("[analyzeRequirements] LLM analysis failed, falling back to heuristic:", error);
+    }
+  }
+
+  // 2. Fallback to heuristic-based extraction for MVP mock phase
   const lines = text
     .split(/\n+/)
     .map((line) => line.replace(/^[-*\d.\s]+/, "").trim())

@@ -6,7 +6,7 @@ import { Badge } from '../ui/Badges';
 
 export const UploadScreen = ({ onAnalyze, text, setText }) => {
   const [docType, setDocType] = useState('Requirements Document');
-  const { documents } = useUploadFlow();
+  const { documents, addDocument } = useUploadFlow();
 
   const docTypes = [
     'Requirements Document',
@@ -237,7 +237,7 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
                 {(!f.parseStatus || f.parseStatus === 'parsed' || f.parseStatus === 'idle') && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button 
-                      onClick={() => onAnalyze(f.extractedText || f.ocrText || 'Mock parsed text for document.')}
+                      onClick={() => onAnalyze(f.extractedText || f.ocrText || 'Mock parsed text for document.', { id: f.id, name: f.fileName, type: f.fileType, tokens: f.tokens || Math.ceil((f.extractedText || '').length / 4) || 2400 })}
                       style={{
                         background: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px',
                         padding: '6px 12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
