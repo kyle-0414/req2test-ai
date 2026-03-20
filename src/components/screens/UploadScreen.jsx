@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUploadFlow } from '../../hooks/useUploadFlow';
 import { createImageSourceDocument } from '../../utils/file';
-import { Upload, Image as ImageIcon, FileText, CheckCircle, Search, Layers, PlayCircle, X, Check, File, Zap, Sparkles } from 'lucide-react';
+import { Upload, Image as ImageIcon, FileText, CheckCircle, Search, Layers, PlayCircle, X, Check, File, Zap, Sparkles, AlertCircle } from 'lucide-react';
 import { Badge } from '../ui/Badges';
 
 export const UploadScreen = ({ onAnalyze, text, setText }) => {
@@ -31,7 +31,7 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
           // Ensure file has a name
           const renamedFile = new File([file], `pasted-image-${Date.now()}.${extension}`, { type: file.type });
           const sourceDoc = createImageSourceDocument(renamedFile, docType);
-          addDocument(sourceDoc);
+          addDocument(sourceDoc, renamedFile);
         }
       }
     }
@@ -54,7 +54,7 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
       files.forEach((file) => {
         if (file.type.indexOf('image/') === 0) {
           const sourceDoc = createImageSourceDocument(file, docType);
-          addDocument(sourceDoc);
+          addDocument(sourceDoc, file);
         }
       });
     }
@@ -229,9 +229,33 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#059669', fontWeight: '600' }}>
-                  <CheckCircle size={16} /> Ready
-                </div>
+                {f.parseStatus === 'parsing' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#d97706', fontWeight: '600' }}>
+                    <div className="animate-spin" style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #fcd34d', borderTopColor: '#d97706' }} /> Parsing...
+                  </div>
+                )}
+                {(!f.parseStatus || f.parseStatus === 'parsed' || f.parseStatus === 'idle') && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button 
+                      onClick={() => onAnalyze(f.extractedText || f.ocrText || 'Mock parsed text for document.')}
+                      style={{
+                        background: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px',
+                        padding: '6px 12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '4px'
+                      }}
+                    >
+                      <Zap size={12} fill="#ffffff" /> Analyze
+                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#059669', fontWeight: '600' }}>
+                      <CheckCircle size={16} /> Ready
+                    </div>
+                  </div>
+                )}
+                {f.parseStatus === 'failed' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#ef4444', fontWeight: '600' }} title={f.parseError}>
+                    <AlertCircle size={16} /> Failed
+                  </div>
+                )}
                 <button style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }} title="Remove">
                   <X size={18} />
                 </button>
