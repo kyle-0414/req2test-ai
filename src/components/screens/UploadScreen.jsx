@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Image as ImageIcon, FileText, CheckCircle, Search, Layers, PlayCircle, X, Check, File } from 'lucide-react';
+import { Upload, Image as ImageIcon, FileText, CheckCircle, Search, Layers, PlayCircle, X, Check, File, Zap, Sparkles } from 'lucide-react';
 import { Badge } from '../ui/Badges';
 
 export const UploadScreen = ({ onAnalyze, text, setText }) => {
@@ -12,7 +12,7 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
     'Requirements Document',
     'Screen Spec',
     'Change Request',
-    'Screenshot / Capture',
+    'Capture',
     'Other'
   ];
 
@@ -22,115 +22,132 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
       minHeight: '100%', 
       display: 'flex',
       flexDirection: 'row',
-      gap: '32px',
-      padding: '40px 48px',
+      gap: '48px', /* Increased gap for better balance */
+      padding: '48px 56px',
       fontFamily: 'Inter, sans-serif'
     }}>
       {/* Left Column (55%) */}
-      <div style={{ flex: '55%', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      <div style={{ flex: '55%', display: 'flex', flexDirection: 'column', gap: '36px' }}>
         
-        {/* Hero Message Block */}
-        <div>
-          <h1 style={{ 
-            fontSize: '32px', 
-            fontWeight: '700', 
-            color: '#0f172a', /* dark slate */
-            letterSpacing: '-0.02em',
-            marginBottom: '12px'
-          }}>
-            문서를 올리면 테스트 설계가 시작됩니다
-          </h1>
-          <p style={{ 
-            fontSize: '15px', 
-            color: '#64748b', /* muted slate */
-            lineHeight: '1.6',
-            maxWidth: '540px'
-          }}>
-            Upload requirement documents, images, or screenshots. AI will extract requirement items, discover test points, and generate draft test cases automatically.
-          </p>
-        </div>
-
-        {/* Value Pills */}
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {[
-            { icon: <Search size={14} />, text: 'Requirement Extraction' },
-            { icon: <Layers size={14} />, text: 'Test Point Discovery' },
-            { icon: <PlayCircle size={14} />, text: 'Draft Test Case Generation' }
-          ].map((pill, idx) => (
-            <div key={idx} style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '6px 14px', borderRadius: '99px',
-              background: '#e0e7ff', /* indigo-100 */
-              color: '#3730a3', /* indigo-800 */
-              fontSize: '13px', fontWeight: '600'
+        {/* 1. Hero Message Block */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <h1 style={{ 
+              fontSize: '36px', 
+              fontWeight: '700', 
+              color: '#0f172a', /* dark slate */
+              letterSpacing: '-0.03em',
+              lineHeight: '1.25',
+              marginBottom: '16px'
             }}>
-              {pill.icon}
-              {pill.text}
-            </div>
-          ))}
+              문서를 올리면<br/>테스트 설계가 시작됩니다
+            </h1>
+            <p style={{ 
+              fontSize: '16px', 
+              color: '#475569', 
+              lineHeight: '1.6',
+              maxWidth: '480px',
+              fontWeight: '400'
+            }}>
+              Upload requirement documents, images, or screenshots. AI will extract requirement items, discover test points, and generate draft test cases automatically.
+            </p>
+          </div>
+
+          {/* Value Pills */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {[
+              { icon: <Search size={14} strokeWidth={2.5} />, text: 'Requirement Extraction' },
+              { icon: <Layers size={14} strokeWidth={2.5} />, text: 'Test Point Discovery' },
+              { icon: <PlayCircle size={14} strokeWidth={2.5} />, text: 'Draft Test Case Generation' }
+            ].map((pill, idx) => (
+              <div key={idx} style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '8px 16px', borderRadius: '99px',
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                color: '#334155',
+                fontSize: '13px', fontWeight: '600',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+              }}>
+                <span style={{ color: '#4f46e5' }}>{pill.icon}</span>
+                {pill.text}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Main Upload Dropzone */}
+        {/* 4. Main Upload Dropzone */}
         <div style={{
           background: '#ffffff',
-          border: '2px dashed #cbd5e1',
-          borderRadius: '24px', /* 2xl */
-          padding: '48px 32px',
+          border: '2px dashed #e2e8f0', /* subtle border */
+          borderRadius: '24px', 
+          padding: '56px 40px',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           textAlign: 'center',
-          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
+          boxShadow: '0 4px 20px -4px rgba(0,0,0,0.02)',
           transition: 'all 0.2s ease',
           cursor: 'pointer'
         }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = '#4f46e5'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = '#cbd5e1'}>
+        onMouseEnter={e => {
+          e.currentTarget.style.borderColor = '#818cf8';
+          e.currentTarget.style.background = '#fafafa';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.borderColor = '#e2e8f0';
+          e.currentTarget.style.background = '#ffffff';
+        }}>
           <div style={{
-            width: '64px', height: '64px', borderRadius: '16px',
-            background: '#eef2ff', color: '#4f46e5',
+            width: '80px', height: '80px', borderRadius: '50%',
+            background: '#f1f5f9', color: '#4f46e5',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: '20px'
+            marginBottom: '24px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
           }}>
-            <Upload size={28} />
+            <Upload size={32} strokeWidth={1.5} />
           </div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
-            Drag and drop files here
+          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>
+            Drop files to start analysis
           </h3>
-          <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '24px' }}>
-            Support for PDF, DOCX, PNG, JPG, TXT up to 50MB
+          <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '32px' }}>
+            Support for PDF, DOCX, PNG, JPG up to 50MB
           </p>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '16px' }}>
             <button style={{
               background: '#4f46e5', color: '#ffffff',
-              border: 'none', borderRadius: '8px',
-              padding: '10px 20px', fontSize: '14px', fontWeight: '600',
+              border: 'none', borderRadius: '10px',
+              padding: '12px 24px', fontSize: '14px', fontWeight: '600',
               display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(79,70,229,0.2)'
+              boxShadow: '0 4px 6px -1px rgba(79,70,229,0.3)'
             }}>
-              <File size={16} /> Upload File
+              <File size={18} /> Upload File
             </button>
             <button style={{
-              background: '#ffffff', color: '#4f46e5',
-              border: '1px solid #4f46e5', borderRadius: '8px',
-              padding: '10px 20px', fontSize: '14px', fontWeight: '600',
-              display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer'
+              background: '#ffffff', color: '#1e293b',
+              border: '1px solid #cbd5e1', borderRadius: '10px',
+              padding: '12px 24px', fontSize: '14px', fontWeight: '600',
+              display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
             }}>
-              <ImageIcon size={16} /> Upload Image
+              <ImageIcon size={18} color="#64748b" /> Upload Image
             </button>
           </div>
         </div>
 
-        {/* Document Type Selector */}
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '16px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-          <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '12px' }}>
-            Document Type
+        {/* 6. Document Type Selector */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', paddingLeft: '4px' }}>
+            Document Context
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ 
+            display: 'inline-flex', background: '#f1f5f9', padding: '6px', borderRadius: '16px', flexWrap: 'wrap', gap: '4px' 
+          }}>
             {docTypes.map(t => (
               <button key={t} onClick={() => setDocType(t)} style={{
-                background: docType === t ? '#4f46e5' : '#f1f5f9',
-                color: docType === t ? '#ffffff' : '#475569',
-                border: 'none', borderRadius: '99px',
-                padding: '6px 16px', fontSize: '13px', fontWeight: docType === t ? '600' : '500',
+                background: docType === t ? '#ffffff' : 'transparent',
+                color: docType === t ? '#0f172a' : '#64748b',
+                border: 'none', borderRadius: '12px',
+                padding: '8px 16px', fontSize: '13px', fontWeight: docType === t ? '600' : '500',
+                boxShadow: docType === t ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                 cursor: 'pointer', transition: 'all 0.2s'
               }}>
                 {t}
@@ -139,28 +156,33 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
           </div>
         </div>
 
-        {/* Upload Queue */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ fontSize: '13px', fontWeight: '600', color: '#64748b' }}>Upload Queue</div>
+        {/* 6. Upload Queue */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {files.map((f, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: '#ffffff', borderRadius: '12px', padding: '12px 16px',
-              border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+              background: '#ffffff', borderRadius: '16px', padding: '16px 20px',
+              border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ color: '#4f46e5' }}><FileText size={18} /></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ 
+                  background: '#eef2ff', color: '#4f46e5', padding: '10px', borderRadius: '10px'
+                }}>
+                  <FileText size={20} />
+                </div>
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>{f.name}</div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{f.type} • {f.size}</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{f.name}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', fontWeight: '500' }}>
+                    {f.type} <span style={{ color: '#cbd5e1', margin: '0 4px' }}>|</span> {f.size}
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#059669', fontWeight: '500' }}>
-                  <CheckCircle size={14} /> Ready
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#059669', fontWeight: '600' }}>
+                  <CheckCircle size={16} /> Ready
                 </div>
-                <button style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer' }} title="Remove">
-                  <X size={16} />
+                <button style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }} title="Remove">
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -170,86 +192,108 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
       </div>
 
       {/* Right Column (45%) */}
-      <div style={{ flex: '45%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ flex: '45%', display: 'flex', flexDirection: 'column', gap: '32px' }}>
         
-        {/* Text Input Section */}
+        {/* 2. Text Input Section */}
         <div style={{
           background: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0',
-          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column',
           overflow: 'hidden', flex: 1
         }}>
           <div style={{
-            padding: '20px 24px', borderBottom: '1px solid #e2e8f0',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            padding: '28px 32px 24px', borderBottom: '1px solid #f1f5f9',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'
           }}>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={16} color="#4f46e5" /> Manual Requirement Input
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} color="#4f46e5" /> Smart Manual Input
+              </div>
+              <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '400' }}>
+                Paste requirement text directly for instant AI analysis.
+              </div>
             </div>
             <button style={{
-              background: 'none', border: 'none', color: '#4f46e5',
-              fontSize: '13px', fontWeight: '600', cursor: 'pointer'
+              background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569',
+              borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+              transition: 'background 0.2s'
             }}>
               Load Sample
             </button>
           </div>
-          <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
-              Paste requirement text directly. It acts as an alternative input path.
-            </p>
+
+          <div style={{ padding: '32px', flex: 1, display: 'flex', flexDirection: 'column', background: '#ffffff' }}>
             <textarea
               style={{
-                flex: 1, width: '100%', minHeight: '200px',
-                border: '1px solid #e2e8f0', borderRadius: '12px',
-                padding: '16px', fontSize: '14px', color: '#334155',
-                lineHeight: '1.6', resize: 'none', outline: 'none',
-                background: '#f8fafc'
+                flex: 1, width: '100%', minHeight: '260px',
+                border: 'none',
+                fontSize: '15px', color: '#1e293b',
+                lineHeight: '1.7', resize: 'none', outline: 'none',
+                background: 'transparent',
+                fontWeight: '400'
               }}
-              placeholder="Paste text here..."
+              placeholder="Start typing or paste your requirements here...&#10;&#10;E.g.,&#10;'When the user clicks the info icon, it should open the details modal...' "
               value={text}
               onChange={e => setText(e.target.value)}
-              onFocus={e => e.target.style.borderColor = '#4f46e5'}
-              onBlur={e => e.target.style.borderColor = '#e2e8f0'}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
-              <span style={{ fontSize: '12px', color: '#94a3b8' }}>{text.length} characters</span>
+            
+            <div style={{ 
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+              marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' 
+            }}>
+              <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>
+                {text.length === 0 ? '0 characters' : `${text.length} characters`} · AI is ready
+              </span>
               <button
                 onClick={() => onAnalyze(text)}
                 disabled={text.length === 0}
                 style={{
-                  background: '#4f46e5', color: '#ffffff',
-                  border: 'none', borderRadius: '8px',
-                  padding: '10px 24px', fontSize: '14px', fontWeight: '600',
-                  opacity: text.length === 0 ? 0.5 : 1,
+                  background: text.length > 0 ? '#0f172a' : '#f1f5f9', 
+                  color: text.length > 0 ? '#ffffff' : '#94a3b8',
+                  border: 'none', borderRadius: '12px',
+                  padding: '12px 28px', fontSize: '14px', fontWeight: '600',
                   cursor: text.length === 0 ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', gap: '8px',
-                  boxShadow: '0 2px 4px rgba(79,70,229,0.2)'
+                  boxShadow: text.length > 0 ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.2s'
                 }}
               >
-                <Search size={16} /> Analyze Input
+                <Zap size={16} fill={text.length > 0 ? "#ffffff" : "none"} /> Analyze Text
               </button>
             </div>
           </div>
         </div>
 
-        {/* "What AI will do" summary card */}
+        {/* 5. "What happens next?" summary card */}
         <div style={{
-          background: '#1e293b', /* dark slate */
-          borderRadius: '24px', padding: '24px',
-          color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+          background: 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)',
+          borderRadius: '24px', padding: '32px',
+          color: '#ffffff', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
+          border: '1px solid rgba(255,255,255,0.05)'
         }}>
-          <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ZapIcon size={18} color="#e0e7ff" /> What happens next?
+          <h4 style={{ 
+            fontSize: '13px', fontWeight: '700', marginBottom: '20px', 
+            textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94a3b8',
+            display: 'flex', alignItems: 'center', gap: '8px' 
+          }}>
+            Analysis Workflow
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {[
               'Extract functions, conditions, expected results',
               'Identify ambiguous requirements',
               'Suggest automation candidates',
               'Generate draft test cases'
             ].map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ color: '#4ade80', marginTop: '2px' }}><Check size={14} /></div>
-                <div style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.4' }}>{item}</div>
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ 
+                  background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', 
+                  width: '24px', height: '24px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Check size={14} strokeWidth={3} />
+                </div>
+                <div style={{ fontSize: '14.5px', color: '#e2e8f0', fontWeight: '500' }}>{item}</div>
               </div>
             ))}
           </div>
@@ -259,10 +303,3 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
     </div>
   );
 };
-
-// Helper icon
-const ZapIcon = ({ size, color }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-  </svg>
-);
