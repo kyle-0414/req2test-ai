@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAnalysisFlow } from '../../hooks/useAnalysisFlow';
 import { Search, FileText, CheckCircle, AlertTriangle, Cpu, Layers, Edit2, Filter, BookOpen, Zap, AlertCircle, LayoutList, Check, Target, SlidersHorizontal, Eye, AlignLeft } from 'lucide-react';
 import { Badge, ConfBadge } from '../ui/Badges';
 
-export const AnalysisScreen = ({ onGenerateTC, analysis, sourceText }) => {
-  const [selectedReqId, setSelectedReqId] = useState(analysis?.requirements?.[0]?.id || null);
-  const [isOCRMode, setIsOCRMode] = useState(false);
-  const selectedReq = analysis?.requirements?.find(r => r.id === selectedReqId) || 
-                      analysis?.risks?.find(r => 'risk-' + r.text === selectedReqId) || 
-                      null;
+export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "doc-001", projectId = "project-001" }) => {
+  const { requirements: reqs, summary, runAnalysis, state } = useAnalysisFlow();
 
-  const reqs = analysis?.requirements || [];
-  const totalReqs = reqs.length;
-  const reviewCount = reqs.filter(r => r.type === 'review').length;
-  const autoCount = reqs.filter(r => r.conf === 'High').length;
+  useEffect(() => {
+    if (sourceText) {
+      runAnalysis(projectId, sourceDocumentId, sourceText);
+    }
+  }, [sourceText]);
+
+  const [selectedReqId, setSelectedReqId] = useState(null);
+  const [isOCRMode, setIsOCRMode] = useState(false);
+
+  useEffect(() => {
+    if (reqs.length > 0 && !selectedReqId) {
+      setSelectedReqId(reqs[0].id);
+    }
+  }, [reqs, selectedReqId]);
+
+  const selectedReq = reqs.find(r => r.id === selectedReqId) || null;
+
+  const totalReqs = summary?.totalExtracted || 0;
+  const reviewCount = summary?.pendingReview || 0;
+  const autoCount = summary?.autoCandidates || 0;
 
   return (
     <div className="animate-in" style={{ 
@@ -76,7 +89,7 @@ export const AnalysisScreen = ({ onGenerateTC, analysis, sourceText }) => {
             borderRadius: '6px', padding: '8px 18px', fontSize: '13px', fontWeight: '600',
             display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
             boxShadow: '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s'
-          }} onClick={onGenerateTC} onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}>
+          }} onClick={() => onGenerateTC(reqs)} onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}>
             <CheckCircle size={14} /> Finalize to Test Cases
           </button>
         </div>
@@ -182,8 +195,8 @@ export const AnalysisScreen = ({ onGenerateTC, analysis, sourceText }) => {
           <div style={{ flex: 1, overflowY: 'auto', background: '#f1f5f9', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 4px 6px -4px rgba(0,0,0,0.03)' }}>
             {reqs.length > 0 ? reqs.map(req => {
               const isSelected = selectedReqId === req.id;
-              const isReview = req.type === 'review';
-              const isAuto = req.conf === 'High';
+              const isReview = req.status === 'review_needed';
+              const isAuto = req.automationCandidate;
 
               return (
                 <div key={req.id} onClick={() => setSelectedReqId(req.id)} style={{
@@ -203,16 +216,16 @@ export const AnalysisScreen = ({ onGenerateTC, analysis, sourceText }) => {
                       {isReview && <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', background: '#fef3c7', color: '#b45309', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase' }}><AlertTriangle size={10} strokeWidth={2.5} /> Review</span>}
                     </div>
                     <div>
-                      <ConfBadge conf={req.conf} />
+                      <ConfBadge conf={req.confidence?.charAt(0).toUpperCase() + req.confidence?.slice(1)} />
                     </div>
                   </div>
                   
                   <div style={{ fontSize: '13px', color: '#1e293b', fontWeight: isSelected ? '500' : '400', lineHeight: '1.5', paddingLeft: isSelected ? '6px' : '0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {req.text}
+                    {req.normalizedText || req.originalText}
                   </div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: isSelected ? '6px' : '0' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '500', color: '#64748b' }}>{req.tag || 'Functional'}</span>
+                    <span style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', textTransform: 'capitalize' }}>{req.type?.replace('_', ' ') || 'Functional'}</span>
                     {isAuto && <span style={{ fontSize: '11px', fontWeight: '600', color: '#059669', display: 'flex', alignItems: 'center', gap: '4px' }}><Zap size={12} strokeWidth={2.5} fill="#059669" fillOpacity={0.2} /> Auto-Candidate</span>}
                   </div>
                 </div>
@@ -244,7 +257,7 @@ export const AnalysisScreen = ({ onGenerateTC, analysis, sourceText }) => {
               <div style={{ padding: '24px 28px 20px', borderBottom: '1px solid #e2e8f0', background: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>{selectedReq.id || 'Detail Workspace'}</h2>
-                  {selectedReq.type === 'review' ? (
+                  {selectedReq.status === 'review_needed' ? (
                     <span style={{ fontSize: '11px', padding: '4px 10px', background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', borderRadius: '6px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                       <AlertCircle size={12} strokeWidth={2.5} /> Needs Review
                     </span>
@@ -273,7 +286,7 @@ export const AnalysisScreen = ({ onGenerateTC, analysis, sourceText }) => {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
                     border: '1px solid #e2e8f0', borderLeft: '4px solid #cbd5e1'
                   }}>
-                    {selectedReq.text}
+                    {selectedReq.originalText || selectedReq.normalizedText}
                   </div>
                 </div>
 
@@ -285,19 +298,19 @@ export const AnalysisScreen = ({ onGenerateTC, analysis, sourceText }) => {
                    <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', background: '#f8fafc' }}>
                      <div>
                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Inferred Category</div>
-                       <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '600' }}>{selectedReq.tag || 'Functional Requirement'}</div>
+                       <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '600', textTransform: 'capitalize' }}>{selectedReq.type?.replace('_', ' ') || 'Functional Requirement'}</div>
                      </div>
                      <div>
                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Automation Path</div>
-                       <div style={{ fontSize: '14px', color: selectedReq.conf === 'High' ? '#059669' : '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                         {selectedReq.conf === 'High' ? <><Zap size={14} strokeWidth={2.5} fill="#059669" fillOpacity={0.2} /> Highly Automatable</> : 'Manual Testing Advisory'}
+                       <div style={{ fontSize: '14px', color: selectedReq.automationCandidate ? '#059669' : '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                         {selectedReq.automationCandidate ? <><Zap size={14} strokeWidth={2.5} fill="#059669" fillOpacity={0.2} /> Highly Automatable</> : 'Manual Testing Advisory'}
                        </div>
                      </div>
                    </div>
                 </div>
 
                 {/* Section E: Review Warning Box (If needed) */}
-                {selectedReq.type === 'review' && (
+                {selectedReq.status === 'review_needed' && (
                   <div style={{ background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', padding: '20px', display: 'flex', gap: '16px', alignItems: 'flex-start', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                     <div style={{ color: '#d97706', background: '#fef3c7', padding: '8px', borderRadius: '8px' }}>
                       <AlertTriangle size={18} strokeWidth={2.5} />

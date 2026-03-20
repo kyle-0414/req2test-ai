@@ -1,8 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ChevronRight, Plus, Settings, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { analyzeRequirement, generateTestCases, isConfigured } from './lib/aiClient';
-import { MOCK_TCS } from './constants/mockData';
 import { Sidebar } from './components/layout/Sidebar';
 import { UploadScreen } from './components/screens/UploadScreen';
 import { AnalysisScreen } from './components/screens/AnalysisScreen';
@@ -10,79 +8,27 @@ import { TCScreen } from './components/screens/TCScreen';
 
 export default function App() {
   const [screen, setScreen] = useState('upload');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analyzeStep, setAnalyzeStep] = useState('');
-  const [inputText, setInputText] = useState('');
-  const [analysis, setAnalysis] = useState(null);
-  const [tcs, setTcs] = useState(null);
-  const [aiError, setAiError] = useState(null);
+  
+  // App mostly handles screen switching and passes very minimal state
+  const [sourceText, setSourceText] = useState('');
+  const [extractedReqs, setExtractedReqs] = useState([]);
 
-  const startAnalysis = useCallback(async (text) => {
-    setIsAnalyzing(true);
-    setAiError(null);
-    try {
-      if (!isConfigured()) {
-        throw new Error('API 키가 설정되지 않았습니다. .env 파일을 확인해주세요.');
-      }
-      setAnalyzeStep('Gemini Flash (Latest)가 요구사항을 분석 중입니다...');
-      const result = await analyzeRequirement(text);
-      setAnalysis(result);
-      setScreen('analysis');
-    } catch (e) {
-      setAiError('분석 오류: ' + e.message);
-    } finally {
-      setIsAnalyzing(false);
-      setAnalyzeStep('');
-    }
-  }, []);
+  const startAnalysis = (text) => {
+    setSourceText(text);
+    setScreen('analysis');
+  };
 
-  const startGenerateTC = useCallback(async () => {
-    setIsAnalyzing(true);
-    setAiError(null);
-    try {
-      if (!isConfigured()) {
-        throw new Error('API 키가 설정되지 않았습니다. .env 파일을 확인해주세요.');
-      }
-      if (!analysis) {
-        throw new Error('분석 결과가 없습니다. 먼저 요구사항을 분석해주세요.');
-      }
-      setAnalyzeStep('Gemini Flash (Latest)가 TC 초안을 생성 중입니다...');
-      const result = await generateTestCases(analysis.requirements, analysis.summary);
-      setTcs(result);
-      setScreen('tc');
-    } catch (e) {
-      setAiError('TC 생성 오류: ' + e.message);
-    } finally {
-      setIsAnalyzing(false);
-      setAnalyzeStep('');
-    }
-  }, [analysis]);
+  const startGenerateTC = (reqs) => {
+    setExtractedReqs(reqs);
+    setScreen('tc');
+  };
 
   const renderMain = () => {
-    if (isAnalyzing) {
-      return (
-        <div className="loading-overlay animate-in">
-          <div className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 600, marginBottom: 12 }}>{analyzeStep || 'AI가 처리 중입니다...'}</div>
-            <div className="text-xs text-muted" style={{ marginTop: 8 }}>잠시만 기다려주세요</div>
-          </div>
-        </div>
-      );
-    }
-    if (aiError) {
-      return (
-        <div className="loading-overlay animate-in">
-          <div style={{ color: 'var(--color-danger)', fontWeight: 600, marginBottom: 12 }}>{aiError}</div>
-          <button className="btn btn-secondary" onClick={() => { setAiError(null); setScreen('upload'); }}>돌아가기</button>
-        </div>
-      );
-    }
     switch (screen) {
-      case 'upload':   return <UploadScreen onAnalyze={startAnalysis} text={inputText} setText={setInputText} />;
-      case 'analysis': return <AnalysisScreen onGenerateTC={startGenerateTC} analysis={analysis} sourceText={inputText} />;
-      case 'tc':       return <TCScreen initialTcs={tcs || MOCK_TCS} />;
-      default:         return <UploadScreen onAnalyze={startAnalysis} text={inputText} setText={setInputText} />;
+      case 'upload':   return <UploadScreen onAnalyze={startAnalysis} text={sourceText} setText={setSourceText} />;
+      case 'analysis': return <AnalysisScreen onGenerateTC={startGenerateTC} sourceText={sourceText} />;
+      case 'tc':       return <TCScreen requirements={extractedReqs} />;
+      default:         return <UploadScreen onAnalyze={startAnalysis} text={sourceText} setText={setSourceText} />;
     }
   };
 
@@ -117,7 +63,7 @@ export default function App() {
         <main className="page-content">
           <AnimatePresence mode="wait">
             <motion.div
-              key={screen + (isAnalyzing ? '-loading' : '')}
+              key={screen}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}

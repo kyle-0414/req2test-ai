@@ -1,29 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTestCaseReview } from '../../hooks/useTestCaseReview';
 import { Play, CheckCircle, XCircle, Eye, BarChart3, Clock, Search, Filter, ShieldCheck, FileText, Cpu, Check, ListChecks, AlertTriangle } from 'lucide-react';
 import { Badge, PriorityBadge, RunStatusBadge } from '../ui/Badges';
 import { judgeTestResult } from '../../lib/aiClient';
 
-export const TCScreen = ({ initialTcs }) => {
-  const [tcs, setTcs] = useState(initialTcs || []);
-  const [selectedId, setSelectedId] = useState(initialTcs?.[0]?.id || null);
+export const TCScreen = ({ requirements = [] }) => {
+  const { testCases, createDrafts, approveTestCase, rejectTestCase, setManualOnly } = useTestCaseReview();
+
+  useEffect(() => {
+    if (requirements.length > 0 && testCases.length === 0) {
+      createDrafts("project-001", requirements);
+    }
+  }, [requirements]);
+
+  const [selectedId, setSelectedId] = useState(null);
+
+  useEffect(() => {
+    if (testCases.length > 0 && !selectedId) {
+      setSelectedId(testCases[0].id);
+    }
+  }, [testCases, selectedId]);
+
+  const [runResults, setRunResults] = useState({});
   const [isRunning, setIsRunning] = useState(false);
   const [runLog, setRunLog] = useState([]);
   const [activeTab, setActiveTab] = useState('review'); // 'review' | 'run'
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const approvedCount = tcs.filter(t => t.status === 'approved').length;
-  const draftCount = tcs.filter(t => t.status === 'draft').length;
+  const approvedCount = testCases.filter(t => t.status === 'approved').length;
+  const draftCount = testCases.filter(t => t.status === 'draft').length;
   // Make sure selected is from current tcs
-  const selected = tcs.find(t => t.id === selectedId) || tcs[0];
-
-  const toggleApprove = (id) => {
-    setTcs(prev => prev.map(t =>
-      t.id === id ? { ...t, status: t.status === 'approved' ? 'draft' : 'approved' } : t
-    ));
-  };
+  const selected = testCases.find(t => t.id === selectedId) || testCases[0];
 
   const runAutomation = async () => {
-    const approved = tcs.filter(t => t.status === 'approved');
+    const approved = testCases.filter(t => t.status === 'approved');
     if (!approved.length) return;
     setActiveTab('run');
     setIsRunning(true);
@@ -58,15 +68,11 @@ export const TCScreen = ({ initialTcs }) => {
         });
         setRunLog([...currentLogs]);
 
-        setTcs(prev => prev.map(t => 
-          t.id === tc.id ? { ...t, runStatus: judgeResult?.status || 'fail' } : t
-        ));
+        setRunResults(prev => ({ ...prev, [tc.id]: judgeResult?.status || 'fail' }));
       } catch (err) {
         currentLogs.push({ text: `  ${tc.id}: AI 판독 에러 (${err.message})`, type: 'danger' });
         setRunLog([...currentLogs]);
-        setTcs(prev => prev.map(t => 
-          t.id === tc.id ? { ...t, runStatus: 'fail' } : t
-        ));
+        setRunResults(prev => ({ ...prev, [tc.id]: 'fail' }));
       }
     }
     
@@ -75,12 +81,12 @@ export const TCScreen = ({ initialTcs }) => {
     setIsRunning(false);
   };
 
-  const filteredTcs = tcs.filter(t => {
+  const filteredTcs = testCases.filter(tc => {
     if (statusFilter === 'All') return true;
-    if (statusFilter === 'Draft') return t.status === 'draft';
-    if (statusFilter === 'Approved') return t.status === 'approved';
-    if (statusFilter === 'Rejected') return t.status === 'rejected';
-    if (statusFilter === 'Manual Only') return t.autoCandidate === false;
+    if (statusFilter === 'Draft') return tc.status === 'draft';
+    if (statusFilter === 'Approved') return tc.status === 'approved';
+    if (statusFilter === 'Rejected') return tc.status === 'rejected';
+    if (statusFilter === 'Manual Only') return tc.automationCandidate === false;
     return true;
   });
 
@@ -100,7 +106,7 @@ export const TCScreen = ({ initialTcs }) => {
             <div style={{ display: 'flex', gap: '6px' }}>
               <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>Draft {draftCount}</span>
               <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: '#ecfdf5', color: '#059669', border: '1px solid #d1fae5' }}>Approved {approvedCount}</span>
-              <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: '#eef2ff', color: '#4f46e5', border: '1px solid #e0e7ff' }}>Auto Candidates {tcs.filter(t=>t.autoCandidate).length}</span>
+              <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: '#eef2ff', color: '#4f46e5', border: '1px solid #e0e7ff' }}>Auto Candidates {testCases.filter(t=>t.automationCandidate).length}</span>
             </div>
           </div>
           <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Review AI-generated draft test cases, edit preconditions, and finalize workflow decisions.</p>
@@ -181,7 +187,7 @@ export const TCScreen = ({ initialTcs }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '12px', fontWeight: '700', color: isSelected ? '#4f46e5' : '#475569', fontFamily: 'monospace' }}>{tc.id}</span>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                         {tc.autoCandidate && <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: '#eef2ff', color: '#4f46e5', borderRadius: '4px', border: '1px solid #e0e7ff' }}>Auto Candidate</span>}
+                         {tc.automationCandidate && <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: '#eef2ff', color: '#4f46e5', borderRadius: '4px', border: '1px solid #e0e7ff' }}>Auto Candidate</span>}
                          <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: isApproved ? '#ecfdf5' : '#f1f5f9', color: isApproved ? '#059669' : '#64748b', borderRadius: '4px', border: `1px solid ${isApproved ? '#d1fae5' : '#e2e8f0'}`, textTransform: 'capitalize' }}>
                            {tc.status}
                          </span>
@@ -191,11 +197,11 @@ export const TCScreen = ({ initialTcs }) => {
                       {tc.title}
                     </div>
                     <div style={{ fontSize: '12px', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
-                      {tc.objective || tc.expected}
+                      {tc.objective || tc.expectedResults?.[0]?.description}
                     </div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
                       <span style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500' }}><FileText size={12}/> REQ-Linked</span>
-                      <span style={{ fontSize: '11px', color: tc.priority === 'High' ? '#ef4444' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500' }}>P: {tc.priority || 'Med'}</span>
+                      <span style={{ fontSize: '11px', color: tc.priority === 'high' ? '#ef4444' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500', textTransform: 'capitalize' }}>P: {tc.priority || 'Medium'}</span>
                     </div>
                   </div>
                 );
@@ -218,7 +224,7 @@ export const TCScreen = ({ initialTcs }) => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                           <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', fontFamily: 'monospace' }}>{selected.id}</span>
                           <span style={{ fontSize: '11px', color: '#94a3b8' }}>•</span>
-                          <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Priority: <strong style={{ color: selected.priority === 'High' ? '#ef4444' : '#64748b' }}>{selected.priority || 'Medium'}</strong></span>
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Priority: <strong style={{ color: selected.priority === 'high' ? '#ef4444' : '#64748b', textTransform: 'capitalize' }}>{selected.priority || 'Medium'}</strong></span>
                         </div>
                         <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: '0 0 12px 0', lineHeight: '1.3' }}>{selected.title}</h2>
                         <p style={{ fontSize: '14px', color: '#475569', margin: 0, lineHeight: '1.6' }}>{selected.objective || 'Objective missing.'}</p>
@@ -239,9 +245,9 @@ export const TCScreen = ({ initialTcs }) => {
                       </div>
                       <div>
                         <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Automation</span>
-                        <div style={{ fontSize: '13px', color: selected.autoCandidate ? '#059669' : '#d97706', fontWeight: '600', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {selected.autoCandidate ? <Cpu size={14} color="#059669" /> : <AlertTriangle size={14} color="#d97706" />}
-                          {selected.autoCandidate ? 'Highly Suitable' : 'Manual Recommended'}
+                        <div style={{ fontSize: '13px', color: selected.automationCandidate ? '#059669' : '#d97706', fontWeight: '600', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {selected.automationCandidate ? <Cpu size={14} color="#059669" /> : <AlertTriangle size={14} color="#d97706" />}
+                          {selected.automationCandidate ? 'Highly Suitable' : 'Manual Recommended'}
                         </div>
                       </div>
                     </div>
@@ -257,7 +263,7 @@ export const TCScreen = ({ initialTcs }) => {
                       border: '1px solid #e2e8f0', background: '#ffffff', fontSize: '13.5px',
                       color: '#0f172a', resize: 'vertical', outline: 'none', lineHeight: '1.5',
                       boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.01)', transition: 'border-color 0.15s ease'
-                    }} defaultValue={selected.prereq || 'No specific preconditions provided.'} />
+                    }} defaultValue={selected.preconditions?.[0] || 'No specific preconditions provided.'} />
                   </div>
 
                   {/* Test Steps */}
@@ -266,14 +272,14 @@ export const TCScreen = ({ initialTcs }) => {
                       <ListChecks size={16} color="#64748b" /> Test Steps
                     </div>
                     <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '0', boxShadow: '0 1px 2px rgba(0,0,0,0.01)' }}>
-                       {selected.steps?.split('\n').filter(s=>s.trim()).map((step, idx) => (
-                         <div key={idx} style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: idx !== selected.steps?.split('\n').filter(s=>s.trim()).length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                       {Array.isArray(selected.steps) ? selected.steps.map((step, idx) => (
+                         <div key={idx} style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: idx !== selected.steps.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', width: '24px', textAlign: 'right' }}>{idx+1}.</div>
-                           <input type="text" defaultValue={step.replace(/^\d+\.\s*/, '')} style={{
+                           <input type="text" defaultValue={step.action} style={{
                              flex: 1, border: 'none', background: 'transparent', fontSize: '13.5px', color: '#0f172a', outline: 'none', lineHeight: '1.5'
                            }} />
                          </div>
-                       ))}
+                       )) : null}
                     </div>
                   </div>
 
@@ -287,7 +293,7 @@ export const TCScreen = ({ initialTcs }) => {
                         width: '100%', minHeight: '60px', padding: '0', border: 'none',
                         background: 'transparent', fontSize: '13.5px', fontWeight: '500',
                         color: '#065f46', resize: 'vertical', outline: 'none', lineHeight: '1.6'
-                      }} defaultValue={selected.expected || 'Result not defined.'} />
+                      }} defaultValue={selected.expectedResults?.[0]?.description || 'Result not defined.'} />
                     </div>
                   </div>
 
@@ -296,7 +302,7 @@ export const TCScreen = ({ initialTcs }) => {
                     <div style={{ fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
                       <Cpu size={16} color="#818cf8" /> Automation Suitability Analysis
                     </div>
-                    {selected.autoCandidate ? (
+                    {selected.automationCandidate ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <p style={{ fontSize: '13.5px', color: '#cbd5e1', margin: '0' }}>This test case is marked as a strong candidate for automation because:</p>
                         <div style={{ display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: '10px 12px', marginTop: '4px' }}>
@@ -329,12 +335,12 @@ export const TCScreen = ({ initialTcs }) => {
                 {/* Decision Action Bar (Sticky Bottom) */}
                 <div style={{ position: 'sticky', bottom: 0, padding: '16px 24px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', zIndex: 10, boxShadow: '0 -1px 3px rgba(0,0,0,0.02)' }}>
                   <div style={{ flex: 1, display: 'flex', gap: '16px' }}>
-                     {!selected.autoCandidate && <button style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', padding: '8px 0', textDecoration: 'underline', textUnderlineOffset: '2px' }}>Set Manual Only</button>}
+                     {!selected.automationCandidate && <button onClick={() => setManualOnly(selected.id)} style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', padding: '8px 0', textDecoration: 'underline', textUnderlineOffset: '2px' }}>Set Manual Only</button>}
                   </div>
-                  <button style={{ background: '#ffffff', color: '#dc2626', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }}>Reject</button>
+                  <button onClick={() => rejectTestCase(selected.id)} style={{ background: '#ffffff', color: '#dc2626', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }}>Reject</button>
                   <button style={{ background: '#ffffff', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }}>Save Draft</button>
-                  <button onClick={() => toggleApprove(selected.id)} style={{ background: selected.status === 'approved' ? '#f1f5f9' : '#0f172a', color: selected.status === 'approved' ? '#0f172a' : '#ffffff', border: selected.status === 'approved' ? '1px solid #e2e8f0' : 'none', borderRadius: '6px', padding: '8px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: selected.status === 'approved' ? 'none' : '0 1px 2px rgba(0,0,0,0.1)', transition: 'all 0.15s ease' }}>
-                    {selected.status === 'approved' ? 'Revoke Approval' : 'Approve Validation'}
+                  <button onClick={() => approveTestCase(selected.id)} style={{ background: selected.status === 'approved' ? '#f1f5f9' : '#0f172a', color: selected.status === 'approved' ? '#0f172a' : '#ffffff', border: selected.status === 'approved' ? '1px solid #e2e8f0' : 'none', borderRadius: '6px', padding: '8px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: selected.status === 'approved' ? 'none' : '0 1px 2px rgba(0,0,0,0.1)', transition: 'all 0.15s ease' }}>
+                    {selected.status === 'approved' ? 'Approved' : 'Approve Validation'}
                   </button>
                 </div>
               </div>
@@ -371,7 +377,7 @@ export const TCScreen = ({ initialTcs }) => {
 
            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
              <div className="section-label"><BarChart3 size={13}/> Execution Results</div>
-             {tcs.filter(t => t.status === 'approved').map(tc => (
+             {testCases.filter(t => t.status === 'approved').map(tc => (
                <div key={tc.id} className="card card-sm">
                  <div className="card-body">
                    <div className="run-result-row">
@@ -379,7 +385,7 @@ export const TCScreen = ({ initialTcs }) => {
                        <div className="tc-item-id">{tc.id}</div>
                        <div style={{ fontWeight: 600, fontSize: 13.5 }}>{tc.title}</div>
                      </div>
-                     <RunStatusBadge status={tc.runStatus} />
+                     <RunStatusBadge status={runResults[tc.id]} />
                    </div>
                  </div>
                </div>

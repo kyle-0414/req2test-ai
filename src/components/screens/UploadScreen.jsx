@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
+import { useUploadFlow } from '../../hooks/useUploadFlow';
 import { Upload, Image as ImageIcon, FileText, CheckCircle, Search, Layers, PlayCircle, X, Check, File, Zap, Sparkles } from 'lucide-react';
 import { Badge } from '../ui/Badges';
 
 export const UploadScreen = ({ onAnalyze, text, setText }) => {
   const [docType, setDocType] = useState('Requirements Document');
-  const [files, setFiles] = useState([
-    { name: 'login_requirements_v2.pdf', type: 'PDF', size: '2.4 MB', status: 'ready' }
-  ]);
+  const { documents } = useUploadFlow();
 
   const docTypes = [
     'Requirements Document',
@@ -158,8 +157,8 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
 
         {/* 6. Upload Queue */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {files.map((f, i) => (
-            <div key={i} style={{
+          {documents.map((f, i) => (
+            <div key={f.id || i} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: '#ffffff', borderRadius: '16px', padding: '16px 20px',
               border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
@@ -171,9 +170,9 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
                   <FileText size={20} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{f.name}</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{f.fileName}</div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', fontWeight: '500' }}>
-                    {f.type} <span style={{ color: '#cbd5e1', margin: '0 4px' }}>|</span> {f.size}
+                    {f.fileType?.toUpperCase()} <span style={{ color: '#cbd5e1', margin: '0 4px' }}>|</span> {f.size ? `${(f.size / 1000000).toFixed(1)} MB` : '2.4 MB'}
                   </div>
                 </div>
               </div>
