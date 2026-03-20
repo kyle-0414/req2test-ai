@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, CheckCircle, XCircle, Eye, BarChart3, Clock, Search, Filter, ShieldCheck, FileText, Cpu, Check, ListChecks } from 'lucide-react';
+import { Play, CheckCircle, XCircle, Eye, BarChart3, Clock, Search, Filter, ShieldCheck, FileText, Cpu, Check, ListChecks, AlertTriangle } from 'lucide-react';
 import { Badge, PriorityBadge, RunStatusBadge } from '../ui/Badges';
 import { judgeTestResult } from '../../lib/aiClient';
 
@@ -90,28 +90,30 @@ export const TCScreen = ({ initialTcs }) => {
       {/* Top Toolbar */}
       <div style={{
         background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '16px 24px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10,
+        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.02)'
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#1e293b', margin: 0 }}>Test Case Review</h1>
+            <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>Test Case Review</h1>
+            <div style={{ width: '1px', height: '16px', background: '#cbd5e1' }} />
             <div style={{ display: 'flex', gap: '6px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '99px', background: '#f1f5f9', color: '#64748b' }}>Draft {draftCount}</span>
-              <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '99px', background: '#d1fae5', color: '#059669' }}>Approved {approvedCount}</span>
-              <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '99px', background: '#e0e7ff', color: '#4f46e5' }}>Auto Candidates {tcs.filter(t=>t.autoCandidate).length}</span>
+              <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>Draft {draftCount}</span>
+              <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: '#ecfdf5', color: '#059669', border: '1px solid #d1fae5' }}>Approved {approvedCount}</span>
+              <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: '#eef2ff', color: '#4f46e5', border: '1px solid #e0e7ff' }}>Auto Candidates {tcs.filter(t=>t.autoCandidate).length}</span>
             </div>
           </div>
-          <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Review AI-generated draft test cases, edit preconditions, and decide on automation suitability.</p>
+          <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Review AI-generated draft test cases, edit preconditions, and finalize workflow decisions.</p>
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {activeTab === 'run' ? (
-             <button style={{ background: '#ffffff', border: '1px solid #e2e8f0', color: '#475569', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }} onClick={() => setActiveTab('review')}>
+             <button style={{ background: '#ffffff', border: '1px solid #e2e8f0', color: '#475569', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)' }} onClick={() => setActiveTab('review')}>
                Back to Review
              </button>
           ) : (
             <>
-              <button style={{ background: '#ffffff', border: '1px solid #e2e8f0', color: '#475569', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+              <button style={{ background: '#ffffff', border: '1px solid #e2e8f0', color: '#475569', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)', transition: 'all 0.15s ease' }}>
                 Bulk Actions
               </button>
               <button
@@ -119,10 +121,10 @@ export const TCScreen = ({ initialTcs }) => {
                 onClick={runAutomation}
                 disabled={approvedCount === 0 || isRunning}
                 style={{
-                  background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', cursor: approvedCount === 0 ? 'not-allowed' : 'pointer', opacity: approvedCount === 0 ? 0.5 : 1, boxShadow: '0 2px 4px rgba(79,70,229,0.2)'
+                  background: 'linear-gradient(180deg, #4f46e5 0%, #4338ca 100%)', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', cursor: approvedCount === 0 ? 'not-allowed' : 'pointer', opacity: approvedCount === 0 ? 0.6 : 1, boxShadow: '0 1px 3px rgba(79,70,229,0.3), inset 0 1px 0 rgba(255,255,255,0.1)', transition: 'all 0.15s ease'
                 }}
               >
-                <Play size={14} /> Proceed to Execution Planning
+                <Play size={14} fill="currentColor" /> Proceed to Execution
               </button>
             </>
           )}
@@ -134,27 +136,29 @@ export const TCScreen = ({ initialTcs }) => {
           
           {/* Left Panel: TC Queue (36%) */}
           <div style={{
-            flex: '0 0 36%', borderRight: '1px solid #e2e8f0', background: '#ffffff',
+            flex: '0 0 34%', borderRight: '1px solid #e2e8f0', background: '#fcfcfd',
             display: 'flex', flexDirection: 'column'
           }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '4px' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px', background: '#ffffff' }}>
+              <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '2px' }} className="hide-scrollbar">
                 {['All', 'Draft', 'Approved', 'Rejected', 'Manual Only'].map(tab => (
                   <button key={tab} onClick={() => setStatusFilter(tab)} style={{
-                    background: statusFilter === tab ? '#e2e8f0' : 'none',
+                    background: statusFilter === tab ? '#e2e8f0' : 'transparent',
                     color: statusFilter === tab ? '#0f172a' : '#64748b',
-                    border: 'none', padding: '6px 12px', borderRadius: '6px',
-                    fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap'
+                    border: 'none', padding: '6px 10px', borderRadius: '6px',
+                    fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap',
+                    transition: 'all 0.15s ease'
                   }}>
                     {tab}
                   </button>
                 ))}
               </div>
               <div style={{ position: 'relative' }}>
-                <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
+                <Search size={14} style={{ position: 'absolute', left: '12px', top: '9px', color: '#94a3b8' }} />
                 <input type="text" placeholder="Search test cases..." style={{
-                  width: '100%', padding: '8px 10px 8px 32px', borderRadius: '6px',
-                  border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none', background: '#f8fafc'
+                  width: '100%', padding: '8px 12px 8px 34px', borderRadius: '6px',
+                  border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none', background: '#ffffff',
+                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)', color: '#0f172a', transition: 'border-color 0.15s ease'
                 }}/>
               </div>
             </div>
@@ -166,31 +170,32 @@ export const TCScreen = ({ initialTcs }) => {
                 const isRejected = tc.status === 'rejected';
                 return (
                   <div key={tc.id} onClick={() => setSelectedId(tc.id)} style={{
-                    padding: '14px 16px', borderRadius: '8px', cursor: 'pointer',
-                    background: isSelected ? '#eef2ff' : (isApproved ? '#f8fafc' : '#ffffff'),
-                    border: `1px solid ${isSelected ? '#4f46e5' : '#e2e8f0'}`,
-                    boxShadow: isSelected ? '0 0 0 1px #4f46e5' : '0 1px 2px rgba(0,0,0,0.02)',
+                    padding: '14px', borderRadius: '8px', cursor: 'pointer',
+                    background: isSelected ? '#ffffff' : (isApproved ? '#fafafa' : '#ffffff'),
+                    border: `1px solid ${isSelected ? '#6366f1' : 'transparent'}`,
+                    borderBottom: isSelected ? `1px solid #6366f1` : '1px solid #e2e8f0',
+                    boxShadow: isSelected ? '0 2px 8px rgba(99, 102, 241, 0.12), 0 0 0 1px #6366f1' : '0 1px 2px rgba(0,0,0,0.01)',
                     display: 'flex', flexDirection: 'column', gap: '8px',
-                    opacity: isRejected ? 0.6 : 1
+                    opacity: isRejected ? 0.5 : 1, transition: 'all 0.15s ease'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '700', color: isSelected ? '#4338ca' : '#64748b' }}>{tc.id}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: isSelected ? '#4f46e5' : '#475569', fontFamily: 'monospace' }}>{tc.id}</span>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                         {tc.autoCandidate && <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: '#e0e7ff', color: '#4338ca', borderRadius: '4px' }}>Auto Candidate</span>}
-                         <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: isApproved ? '#d1fae5' : '#f1f5f9', color: isApproved ? '#059669' : '#64748b', borderRadius: '4px' }}>
-                           {tc.status === 'approved' ? 'Approved' : 'Draft'}
+                         {tc.autoCandidate && <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: '#eef2ff', color: '#4f46e5', borderRadius: '4px', border: '1px solid #e0e7ff' }}>Auto Candidate</span>}
+                         <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: isApproved ? '#ecfdf5' : '#f1f5f9', color: isApproved ? '#059669' : '#64748b', borderRadius: '4px', border: `1px solid ${isApproved ? '#d1fae5' : '#e2e8f0'}`, textTransform: 'capitalize' }}>
+                           {tc.status}
                          </span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '13.5px', color: '#1e293b', fontWeight: '600', lineHeight: '1.4' }}>
+                    <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '600', lineHeight: '1.4' }}>
                       {tc.title}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
                       {tc.objective || tc.expected}
                     </div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}><FileText size={12}/> Req Link</span>
-                      <span style={{ fontSize: '11px', color: tc.priority === 'High' ? '#dc2626' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>P: {tc.priority || 'Med'}</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500' }}><FileText size={12}/> REQ-Linked</span>
+                      <span style={{ fontSize: '11px', color: tc.priority === 'High' ? '#ef4444' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '500' }}>P: {tc.priority || 'Med'}</span>
                     </div>
                   </div>
                 );
@@ -207,56 +212,65 @@ export const TCScreen = ({ initialTcs }) => {
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                   
                   {/* Overview Section */}
-                  <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>{selected.id}</div>
-                        <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: 0 }}>{selected.title}</h2>
+                  <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                      <div style={{ flex: 1, paddingRight: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', fontFamily: 'monospace' }}>{selected.id}</span>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>•</span>
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Priority: <strong style={{ color: selected.priority === 'High' ? '#ef4444' : '#64748b' }}>{selected.priority || 'Medium'}</strong></span>
+                        </div>
+                        <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: '0 0 12px 0', lineHeight: '1.3' }}>{selected.title}</h2>
+                        <p style={{ fontSize: '14px', color: '#475569', margin: 0, lineHeight: '1.6' }}>{selected.objective || 'Objective missing.'}</p>
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                         <span style={{ fontSize: '12px', fontWeight: '600', padding: '4px 10px', background: selected.status === 'approved' ? '#d1fae5' : '#f1f5f9', color: selected.status === 'approved' ? '#059669' : '#64748b', borderRadius: '6px' }}>
-                           {selected.status.charAt(0).toUpperCase() + selected.status.slice(1)}
+                         <span style={{ fontSize: '12px', fontWeight: '600', padding: '4px 10px', background: selected.status === 'approved' ? '#ecfdf5' : selected.status === 'rejected' ? '#fef2f2' : '#f1f5f9', color: selected.status === 'approved' ? '#059669' : selected.status === 'rejected' ? '#dc2626' : '#64748b', borderRadius: '6px', border: `1px solid ${selected.status === 'approved' ? '#d1fae5' : selected.status === 'rejected' ? '#fee2e2' : '#e2e8f0'}`, textTransform: 'capitalize' }}>
+                           {selected.status}
                          </span>
                       </div>
                     </div>
-                    <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 16px 0', lineHeight: '1.5' }}>{selected.objective || 'Objective missing.'}</p>
-                    <div style={{ display: 'flex', gap: '24px' }}>
+                    
+                    <div style={{ display: 'flex', gap: '32px', borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginTop: '16px' }}>
                       <div>
-                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Linked Reqs</span>
-                        <div style={{ fontSize: '13px', color: '#1e293b', fontWeight: '500', marginTop: '2px' }}>REQ-01</div>
+                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Requirements</span>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                          <span style={{ fontSize: '12px', color: '#334155', fontWeight: '600', background: '#f8fafc', padding: '2px 8px', borderRadius: '4px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '4px' }}><FileText size={12}/> REQ-01</span>
+                        </div>
                       </div>
                       <div>
-                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Automation</span>
-                        <div style={{ fontSize: '13px', color: selected.autoCandidate ? '#059669' : '#d97706', fontWeight: '500', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Cpu size={14} /> {selected.autoCandidate ? 'Highly Suitable' : 'Manual Recommended'}
+                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Automation</span>
+                        <div style={{ fontSize: '13px', color: selected.autoCandidate ? '#059669' : '#d97706', fontWeight: '600', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {selected.autoCandidate ? <Cpu size={14} color="#059669" /> : <AlertTriangle size={14} color="#d97706" />}
+                          {selected.autoCandidate ? 'Highly Suitable' : 'Manual Recommended'}
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Preconditions */}
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <ShieldCheck size={16} /> Preconditions
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ShieldCheck size={16} color="#64748b" /> Preconditions
                     </div>
                     <textarea style={{
-                      width: '100%', minHeight: '60px', padding: '12px 16px', borderRadius: '8px',
-                      border: '1px solid #e2e8f0', background: '#ffffff', fontSize: '13px',
-                      color: '#334155', resize: 'vertical', outline: 'none'
+                      width: '100%', minHeight: '64px', padding: '12px 16px', borderRadius: '8px',
+                      border: '1px solid #e2e8f0', background: '#ffffff', fontSize: '13.5px',
+                      color: '#0f172a', resize: 'vertical', outline: 'none', lineHeight: '1.5',
+                      boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.01)', transition: 'border-color 0.15s ease'
                     }} defaultValue={selected.prereq || 'No specific preconditions provided.'} />
                   </div>
 
                   {/* Test Steps */}
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <ListChecks size={16} /> Test Steps
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ListChecks size={16} color="#64748b" /> Test Steps
                     </div>
-                    <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+                    <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '0', boxShadow: '0 1px 2px rgba(0,0,0,0.01)' }}>
                        {selected.steps?.split('\n').filter(s=>s.trim()).map((step, idx) => (
-                         <div key={idx} style={{ display: 'flex', gap: '12px', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                           <div style={{ fontSize: '12px', fontWeight: '700', color: '#94a3b8', width: '20px', paddingTop: '2px' }}>{idx+1}.</div>
+                         <div key={idx} style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: idx !== selected.steps?.split('\n').filter(s=>s.trim()).length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                           <div style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', width: '24px', textAlign: 'right' }}>{idx+1}.</div>
                            <input type="text" defaultValue={step.replace(/^\d+\.\s*/, '')} style={{
-                             flex: 1, border: 'none', background: 'transparent', fontSize: '13px', color: '#1e293b', outline: 'none'
+                             flex: 1, border: 'none', background: 'transparent', fontSize: '13.5px', color: '#0f172a', outline: 'none', lineHeight: '1.5'
                            }} />
                          </div>
                        ))}
@@ -264,36 +278,48 @@ export const TCScreen = ({ initialTcs }) => {
                   </div>
 
                   {/* Expected Results */}
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <CheckCircle size={16} color="#059669" /> Expected Result
                     </div>
-                    <div style={{ background: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0', padding: '16px' }}>
+                    <div style={{ background: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.01)' }}>
                        <textarea style={{
                         width: '100%', minHeight: '60px', padding: '0', border: 'none',
-                        background: 'transparent', fontSize: '13px', fontWeight: '500',
+                        background: 'transparent', fontSize: '13.5px', fontWeight: '500',
                         color: '#065f46', resize: 'vertical', outline: 'none', lineHeight: '1.6'
                       }} defaultValue={selected.expected || 'Result not defined.'} />
                     </div>
                   </div>
 
                   {/* Automation Suitability Panel */}
-                  <div style={{ background: '#1e293b', borderRadius: '16px', padding: '20px', color: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <Cpu size={16} color="#e0e7ff" /> Automation Suitability Analysis
+                  <div style={{ background: '#0f172a', borderRadius: '12px', padding: '24px', color: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
+                      <Cpu size={16} color="#818cf8" /> Automation Suitability Analysis
                     </div>
                     {selected.autoCandidate ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 8px 0' }}>This test case is marked as a strong candidate for automation because:</p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4ade80' }}><Check size={14} /> Clear deterministic UI result</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4ade80' }}><Check size={14} /> Repeatable validation value</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4ade80' }}><Check size={14} /> Low need for human interpretation</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <p style={{ fontSize: '13.5px', color: '#cbd5e1', margin: '0' }}>This test case is marked as a strong candidate for automation because:</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: '10px 12px', marginTop: '4px' }}>
+                          <Check size={16} color="#34d399" style={{ marginTop: '2px' }}/>
+                          <div style={{ fontSize: '13.5px', color: '#f8fafc', fontWeight: '500' }}>Clear deterministic UI result</div>
+                          
+                          <Check size={16} color="#34d399" style={{ marginTop: '2px' }}/>
+                          <div style={{ fontSize: '13.5px', color: '#f8fafc', fontWeight: '500' }}>Repeatable validation value</div>
+                          
+                          <Check size={16} color="#34d399" style={{ marginTop: '2px' }}/>
+                          <div style={{ fontSize: '13.5px', color: '#f8fafc', fontWeight: '500' }}>Low need for human interpretation</div>
+                        </div>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 8px 0' }}>This test case is recommended for Manual-only execution because:</p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#fef08a' }}><AlertTriangle size={14} /> High visual interpretation required</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#fef08a' }}><AlertTriangle size={14} /> Ambiguous failure condition boundary</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <p style={{ fontSize: '13.5px', color: '#cbd5e1', margin: '0' }}>This test case is recommended for <strong style={{color: '#fef08a'}}>Manual-only</strong> execution because:</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: '10px 12px', marginTop: '4px' }}>
+                          <AlertTriangle size={16} color="#facc15" style={{ marginTop: '2px' }}/>
+                          <div style={{ fontSize: '13.5px', color: '#f8fafc', fontWeight: '500' }}>High visual interpretation required</div>
+                          
+                          <AlertTriangle size={16} color="#facc15" style={{ marginTop: '2px' }}/>
+                          <div style={{ fontSize: '13.5px', color: '#f8fafc', fontWeight: '500' }}>Ambiguous failure condition boundary</div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -301,12 +327,14 @@ export const TCScreen = ({ initialTcs }) => {
                 </div>
 
                 {/* Decision Action Bar (Sticky Bottom) */}
-                <div style={{ position: 'sticky', bottom: 0, padding: '16px 24px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '12px', zIndex: 10, boxShadow: '0 -4px 6px -1px rgba(0,0,0,0.02)' }}>
-                  <button style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', padding: '8px 16px' }}>Set Manual Only</button>
-                  <button style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Reject</button>
-                  <button style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Save Draft</button>
-                  <button onClick={() => toggleApprove(selected.id)} style={{ background: selected.status === 'approved' ? '#059669' : '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                    {selected.status === 'approved' ? 'Approved ✓' : 'Approve Validation'}
+                <div style={{ position: 'sticky', bottom: 0, padding: '16px 24px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', zIndex: 10, boxShadow: '0 -1px 3px rgba(0,0,0,0.02)' }}>
+                  <div style={{ flex: 1, display: 'flex', gap: '16px' }}>
+                     {!selected.autoCandidate && <button style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', padding: '8px 0', textDecoration: 'underline', textUnderlineOffset: '2px' }}>Set Manual Only</button>}
+                  </div>
+                  <button style={{ background: '#ffffff', color: '#dc2626', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }}>Reject</button>
+                  <button style={{ background: '#ffffff', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s ease' }}>Save Draft</button>
+                  <button onClick={() => toggleApprove(selected.id)} style={{ background: selected.status === 'approved' ? '#f1f5f9' : '#0f172a', color: selected.status === 'approved' ? '#0f172a' : '#ffffff', border: selected.status === 'approved' ? '1px solid #e2e8f0' : 'none', borderRadius: '6px', padding: '8px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: selected.status === 'approved' ? 'none' : '0 1px 2px rgba(0,0,0,0.1)', transition: 'all 0.15s ease' }}>
+                    {selected.status === 'approved' ? 'Revoke Approval' : 'Approve Validation'}
                   </button>
                 </div>
               </div>
