@@ -4,14 +4,14 @@ import { Play, CheckCircle, XCircle, Eye, BarChart3, Clock, Search, Filter, Shie
 import { Badge, PriorityBadge, RunStatusBadge } from '../ui/Badges';
 import { judgeTestResult } from '../../lib/aiClient';
 
-export const TCScreen = ({ requirements = [] }) => {
-  const { testCases, createDrafts, approveTestCase, rejectTestCase, setManualOnly } = useTestCaseReview();
+export const TCScreen = ({ requirements = [], projectId }) => {
+  const { testCases, createDrafts, approveTestCase, rejectTestCase, setManualOnly } = useTestCaseReview(projectId);
 
   useEffect(() => {
     if (requirements.length > 0 && testCases.length === 0) {
-      createDrafts("project-001", requirements);
+      createDrafts(projectId, requirements);
     }
-  }, [requirements]);
+  }, [requirements, projectId, testCases.length, createDrafts]);
 
   const [selectedId, setSelectedId] = useState(null);
 

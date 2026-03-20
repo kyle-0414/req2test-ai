@@ -3,14 +3,14 @@ import { useAnalysisFlow } from '../../hooks/useAnalysisFlow';
 import { Search, FileText, CheckCircle, AlertTriangle, Cpu, Layers, Edit2, Filter, BookOpen, Zap, AlertCircle, LayoutList, Check, Target, SlidersHorizontal, Eye, AlignLeft } from 'lucide-react';
 import { Badge, ConfBadge } from '../ui/Badges';
 
-export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "doc-001", projectId = "project-001", sourceName = "PRD_v1.2.pdf", tokens = 2400, isImage = false }) => {
-  const { requirements: reqs, summary, runAnalysis, state } = useAnalysisFlow();
+export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "doc-001", projectId, sourceName = "PRD_v1.2.pdf", tokens = 2400, isImage = false }) => {
+  const { requirements: reqs, summary, runAnalysis, state, updateRequirement } = useAnalysisFlow(projectId);
 
   useEffect(() => {
-    if (sourceText) {
+    if (sourceText && reqs.length === 0 && state === 'idle') {
       runAnalysis(projectId, sourceDocumentId, sourceText);
     }
-  }, [sourceText, sourceDocumentId, projectId]);
+  }, [sourceText, sourceDocumentId, projectId, reqs.length, state, runAnalysis]);
 
   const [selectedReqId, setSelectedReqId] = useState(null);
   const [isOCRMode, setIsOCRMode] = useState(isImage);
@@ -349,8 +349,20 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                   <button style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s', padding: '6px 0', outline: 'none' }} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#64748b'} onClick={(e) => { e.currentTarget.style.color = '#ef4444'; setTimeout(() => e.target.style.color = '#64748b', 1000)}}>Exclude from Scope</button>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }} onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}>Flag for Manual</button>
-                  <button style={{ background: '#4f46e5', color: '#ffffff', border: '1px solid #4338ca', borderRadius: '6px', padding: '10px 28px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s' }} onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}>Approve Context</button>
+                  <button 
+                    onClick={() => updateRequirement({ ...selectedReq, status: 'review_needed', automationCandidate: false })}
+                    style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }} 
+                    onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}
+                  >
+                    Flag for Manual
+                  </button>
+                  <button 
+                    onClick={() => updateRequirement({ ...selectedReq, status: 'approved' })}
+                    style={{ background: '#4f46e5', color: '#ffffff', border: '1px solid #4338ca', borderRadius: '6px', padding: '10px 28px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s' }} 
+                    onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}
+                  >
+                    Approve Context
+                  </button>
                 </div>
               </div>
             </>

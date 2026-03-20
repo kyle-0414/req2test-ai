@@ -1,12 +1,30 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { SourceDocument } from "../features/documents/model";
 import { UploadFlowState } from "../types/enums";
-import { mockDocuments } from "../mocks/documents";
 import { parseImageOcr } from "../services/document/parseImageOcr";
+import { projectStore } from "../services/storage/projectStore";
 
-export function useUploadFlow() {
-  const [documents, setDocuments] = useState<SourceDocument[]>(mockDocuments);
+export function useUploadFlow(projectId?: string) {
+  const [documents, setDocuments] = useState<SourceDocument[]>([]);
   const [state, setState] = useState<UploadFlowState>("idle");
+
+  // Load initial state
+  useEffect(() => {
+    if (projectId) {
+      const project = projectStore.getProject(projectId);
+      if (project) {
+        setDocuments(project.documents || []);
+      }
+    }
+  }, [projectId]);
+
+  // Persistence side effect
+  const saveDocuments = useCallback((newDocs: SourceDocument[]) => {
+    setDocuments(newDocs);
+    if (projectId) {
+      projectStore.updateDocuments(projectId, newDocs);
+    }
+  }, [projectId]);
 
   const addDocument = useCallback(async (doc: SourceDocument, file?: File | Blob) => {
     const isImage = doc.fileType === 'png' || doc.fileType === 'jpg' || doc.previewUrl != null;
@@ -17,7 +35,8 @@ export function useUploadFlow() {
       doc.parseStatus = 'parsed';
     }
 
-    setDocuments((prev) => [...prev, doc]);
+    const updatedDocsBeforeOCR = [...documents, doc];
+    saveDocuments(updatedDocsBeforeOCR);
 
     if (isImage) {
       try {
@@ -28,40 +47,44 @@ export function useUploadFlow() {
         
         const result = await parseImageOcr(imageSource);
         
-        setDocuments((prev) => 
-          prev.map((d) => 
-            d.id === doc.id 
-              ? {
-                  ...d,
-                  parseStatus: 'parsed',
-                  ocrText: result.ocrText,
-                  extractedText: result.extractedText,
-                  tokens: result.tokens
-                }
-              : d
-          )
+        const updatedDocsAfterOCR = updatedDocsBeforeOCR.map((d) => 
+          d.id === doc.id 
+            ? {
+                ...d,
+                parseStatus: 'parsed' as const,
+                ocrText: result.ocrText,
+                extractedText: result.extractedText,
+                tokens: result.tokens
+              }
+            : d
         );
+        saveDocuments(updatedDocsAfterOCR);
       } catch (err: any) {
         console.error("Error in OCR:", err);
-        setDocuments((prev) => 
-          prev.map((d) => 
-            d.id === doc.id 
-              ? {
-                  ...d,
-                  parseStatus: 'failed',
-                  parseError: err.message || "OCR failed"
-                }
-              : d
-          )
+        const updatedDocsFailed = updatedDocsBeforeOCR.map((d) => 
+          d.id === doc.id 
+            ? {
+                ...d,
+                parseStatus: 'failed' as const,
+                parseError: err.message || "OCR failed"
+              }
+            : d
         );
+        saveDocuments(updatedDocsFailed);
       }
     }
-  }, []);
+  }, [documents, saveDocuments]);
+
+  const removeDocument = useCallback((docId: string) => {
+    const updatedDocs = documents.filter(d => d.id !== docId);
+    saveDocuments(updatedDocs);
+  }, [documents, saveDocuments]);
 
   return {
     documents,
     state,
     setState,
     addDocument,
+    removeDocument,
   };
 }

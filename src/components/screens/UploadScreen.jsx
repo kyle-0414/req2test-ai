@@ -4,9 +4,9 @@ import { createImageSourceDocument } from '../../utils/file';
 import { Upload, Image as ImageIcon, FileText, CheckCircle, Search, Layers, PlayCircle, X, Check, File, Zap, Sparkles, AlertCircle } from 'lucide-react';
 import { Badge } from '../ui/Badges';
 
-export const UploadScreen = ({ onAnalyze, text, setText }) => {
+export const UploadScreen = ({ onAnalyze, text, setText, projectId }) => {
   const [docType, setDocType] = useState('Requirements Document');
-  const { documents, addDocument } = useUploadFlow();
+  const { documents, addDocument, removeDocument } = useUploadFlow(projectId);
 
   const docTypes = [
     'Requirements Document',
@@ -31,11 +31,12 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
           // Ensure file has a name
           const renamedFile = new File([file], `pasted-image-${Date.now()}.${extension}`, { type: file.type });
           const sourceDoc = createImageSourceDocument(renamedFile, docType);
+          if (projectId) sourceDoc.projectId = projectId;
           addDocument(sourceDoc, renamedFile);
         }
       }
     }
-  }, [docType, addDocument]);
+  }, [docType, addDocument, projectId]);
 
   useEffect(() => {
     window.addEventListener('paste', handlePaste);
@@ -54,9 +55,16 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
       files.forEach((file) => {
         if (file.type.indexOf('image/') === 0) {
           const sourceDoc = createImageSourceDocument(file, docType);
+          if (projectId) sourceDoc.projectId = projectId;
           addDocument(sourceDoc, file);
         }
       });
+    }
+  };
+
+  const handleRemove = (id) => {
+    if (window.confirm('Are you sure you want to remove this document?')) {
+      removeDocument(id);
     }
   };
 
@@ -256,7 +264,11 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
                     <AlertCircle size={16} /> Failed
                   </div>
                 )}
-                <button style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }} title="Remove">
+                <button 
+                  onClick={() => handleRemove(f.id)}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }} 
+                  title="Remove"
+                >
                   <X size={18} />
                 </button>
               </div>
