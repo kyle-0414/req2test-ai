@@ -1,0 +1,10 @@
+export type RequirementStatus = "uploaded" | "analyzed" | "review_needed" | "approved";
+export type RequirementType = "screen_navigation" | "display" | "input" | "exception" | "popup" | "filter" | "permission" | "save" | "other";
+export type ConfidenceLevel = "high" | "medium" | "low";
+export type TestCaseStatus = "draft" | "approved" | "rejected" | "manual_only";
+export type PriorityLevel = "high" | "medium" | "low";
+export type DocumentType = "requirements_doc" | "screen_spec" | "change_request" | "capture" | "other";
+export type SourceFileType = "pdf" | "docx" | "txt" | "png" | "jpg" | "unknown";
+export type UploadFlowState = "idle" | "uploading" | "uploaded" | "parsing" | "parsed" | "failed";
+export type AnalysisFlowState = "idle" | "analyzing" | "analyzed" | "reviewing" | "approved";
+export type TestCaseReviewFlowState = "idle" | "generating" | "generated" | "reviewing" | "finalized";
