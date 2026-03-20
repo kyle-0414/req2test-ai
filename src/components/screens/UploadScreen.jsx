@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUploadFlow } from '../../hooks/useUploadFlow';
+import { createImageSourceDocument } from '../../utils/file';
 import { Upload, Image as ImageIcon, FileText, CheckCircle, Search, Layers, PlayCircle, X, Check, File, Zap, Sparkles } from 'lucide-react';
 import { Badge } from '../ui/Badges';
 
@@ -14,6 +15,51 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
     'Capture',
     'Other'
   ];
+
+  const handlePaste = useCallback((e) => {
+    // Only intercept if there's an image. Text paste still needs to work for the textarea.
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === 0) {
+        // Stop default to prevent double action or default browser viewing
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          const extension = file.type.split('/')[1] || 'png';
+          // Ensure file has a name
+          const renamedFile = new File([file], `pasted-image-${Date.now()}.${extension}`, { type: file.type });
+          const sourceDoc = createImageSourceDocument(renamedFile, docType);
+          addDocument(sourceDoc);
+        }
+      }
+    }
+  }, [docType, addDocument]);
+
+  useEffect(() => {
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handlePaste]);
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      // only accept images for this phase
+      files.forEach((file) => {
+        if (file.type.indexOf('image/') === 0) {
+          const sourceDoc = createImageSourceDocument(file, docType);
+          addDocument(sourceDoc);
+        }
+      });
+    }
+  };
+
 
   return (
     <div className="animate-in" style={{ 
@@ -87,6 +133,8 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
           transition: 'all 0.2s ease',
           cursor: 'pointer'
         }}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         onMouseEnter={e => {
           e.currentTarget.style.borderColor = '#818cf8';
           e.currentTarget.style.background = '#fafafa';
@@ -164,11 +212,15 @@ export const UploadScreen = ({ onAnalyze, text, setText }) => {
               border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ 
-                  background: '#eef2ff', color: '#4f46e5', padding: '10px', borderRadius: '10px'
-                }}>
-                  <FileText size={20} />
-                </div>
+                {f.previewUrl ? (
+                  <img src={f.previewUrl} alt={f.fileName} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '10px' }} />
+                ) : (
+                  <div style={{ 
+                    background: '#eef2ff', color: '#4f46e5', padding: '10px', borderRadius: '10px'
+                  }}>
+                    <FileText size={20} />
+                  </div>
+                )}
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>{f.fileName}</div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', fontWeight: '500' }}>
