@@ -4,7 +4,7 @@ import { Search, FileText, CheckCircle, AlertTriangle, Cpu, Layers, Edit2, Filte
 import { Badge, ConfBadge } from '../ui/Badges';
 
 export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "doc-001", projectId, sourceName = "PRD_v1.2.pdf", tokens = 2400, isImage = false }) => {
-  const { requirements: reqs, summary, runAnalysis, state, updateRequirement } = useAnalysisFlow(projectId);
+  const { requirements: reqs, summary, runAnalysis, state, updateRequirement, testPoints } = useAnalysisFlow(projectId);
 
   useEffect(() => {
     if (sourceText && reqs.length === 0 && state === 'idle') {
@@ -22,6 +22,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
   }, [reqs, selectedReqId]);
 
   const selectedReq = reqs.find(r => r.id === selectedReqId) || null;
+  const selectedTestPoints = testPoints.filter(tp => tp.requirementId === selectedReqId);
 
   const totalReqs = summary?.totalExtracted || 0;
   const reviewCount = summary?.pendingReview || 0;
@@ -173,11 +174,11 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#ffffff', zIndex: 2 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Target size={15} color="#4f46e5" strokeWidth={2.5} /> Extraction Queue
+                <Target size={15} color="#4f46e5" strokeWidth={2.5} /> 분석 큐
                 <span style={{ background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: '600', marginLeft: '2px' }}>{totalReqs}</span>
               </div>
               <button style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px 10px', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', transition: 'background 0.2s' }} onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}>
-                <Filter size={13} /> Filter
+                <Filter size={13} /> 필터
               </button>
             </div>
             
@@ -220,7 +221,13 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                     </div>
                   </div>
                   
-                  <div style={{ fontSize: '13px', color: '#1e293b', fontWeight: isSelected ? '500' : '400', lineHeight: '1.5', paddingLeft: isSelected ? '6px' : '0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <div style={{ 
+                    fontSize: '13px', color: '#1e293b', fontWeight: isSelected ? '500' : '400', 
+                    lineHeight: '1.5', paddingLeft: isSelected ? '6px' : '0', 
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', 
+                    overflow: 'hidden', textOverflow: 'ellipsis',
+                    maxHeight: '3em' 
+                  }}>
                     {req.normalizedText || req.originalText}
                   </div>
                   
@@ -278,7 +285,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 {/* Section B: Requirement Text Block */}
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> Extracted Context</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> 추출된 컨텍스트 (원본)</span>
                   </div>
                   <div style={{
                     width: '100%', padding: '16px 20px', borderRadius: '8px',
@@ -286,14 +293,29 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
                     border: '1px solid #e2e8f0', borderLeft: '4px solid #cbd5e1'
                   }}>
-                    {selectedReq.originalText || selectedReq.normalizedText}
+                    {selectedReq.originalText}
+                  </div>
+                </div>
+
+                {/* Section B-2: Normalized Text */}
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Cpu size={13} /> 정제된 요구사항 (AI)</span>
+                  </div>
+                  <div style={{
+                    width: '100%', padding: '16px 20px', borderRadius: '8px',
+                    background: '#f0f9ff', fontSize: '14px', color: '#0369a1', lineHeight: '1.6', 
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    border: '1px solid #bae6fd', borderLeft: '4px solid #38bdf8'
+                  }}>
+                    {selectedReq.normalizedText}
                   </div>
                 </div>
 
                 {/* Section C: AI Interpretation */}
                 <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                    <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', background: '#ffffff', fontSize: '12px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                     <Cpu size={14} color="#4f46e5" strokeWidth={2.5} /> Analysis & Categorization
+                     <Cpu size={14} color="#4f46e5" strokeWidth={2.5} /> AI 분석 및 분류
                    </div>
                    <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', background: '#f8fafc' }}>
                      <div>
@@ -316,9 +338,15 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                       <AlertTriangle size={18} strokeWidth={2.5} />
                     </div>
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#b45309', marginBottom: '6px' }}>Context Ambiguity Warning</div>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#b45309', marginBottom: '6px' }}>문맥 모호성 경고</div>
                       <div style={{ fontSize: '13px', color: '#92400e', lineHeight: '1.6' }}>
-                        The expected condition boundary is vaguely defined in the source document. Consider verifying exact threshold rules before generating test case permutations.
+                        {selectedReq.ambiguityNotes && selectedReq.ambiguityNotes.length > 0 ? (
+                          <ul style={{ margin: 0, paddingLeft: '18px' }}>
+                            {selectedReq.ambiguityNotes.map((note, idx) => <li key={idx}>{note}</li>)}
+                          </ul>
+                        ) : (
+                          "요구사항 내용이 명확하지 않아 정교한 테스트 케이스 생성이 어려울 수 있습니다. 원문을 검토해 주세요."
+                        )}
                       </div>
                     </div>
                   </div>
@@ -327,17 +355,19 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 {/* Section D: Derived Test Points */}
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Layers size={13} strokeWidth={2.5} /> Derived Test Parameters
+                    <Layers size={13} strokeWidth={2.5} /> 연관 검증 파라미터 (Test Points)
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {[1,2].map(i => (
-                      <div key={i} style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '16px 20px', fontSize: '13px', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                    {selectedTestPoints.length > 0 ? selectedTestPoints.map((tp, idx) => (
+                      <div key={tp.id} style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '16px 20px', fontSize: '13px', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                         <div style={{ marginTop: '2px', color: '#94a3b8' }}><Target size={16} strokeWidth={2.5} /></div>
                         <div style={{ lineHeight: '1.6' }}>
-                          <span style={{ fontWeight: '600', color: '#1e293b' }}>Param #{i}:</span> Verify system integrity matches explicitly defined logic branches for this requirement context.
+                          <span style={{ fontWeight: '600', color: '#1e293b' }}>검증 항목 #{idx + 1}:</span> {tp.title} - {tp.description}
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', padding: '10px' }}>생성된 검증 항목이 없습니다.</div>
+                    )}
                   </div>
                 </div>
 
@@ -346,7 +376,19 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
               {/* Section F: Sticky Action Bar */}
               <div style={{ position: 'sticky', bottom: 0, padding: '20px 28px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, boxShadow: '0 -4px 6px -4px rgba(0,0,0,0.02)' }}>
                 <div>
-                  <button style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s', padding: '6px 0', outline: 'none' }} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#64748b'} onClick={(e) => { e.currentTarget.style.color = '#ef4444'; setTimeout(() => e.target.style.color = '#64748b', 1000)}}>Exclude from Scope</button>
+                  <button 
+                    style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s', padding: '6px 0', outline: 'none' }} 
+                    onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} 
+                    onMouseLeave={e=>e.currentTarget.style.color='#64748b'} 
+                    onClick={() => {
+                      if (window.confirm('이 요구사항을 분석 범위에서 제외하시겠습니까?')) {
+                        updateRequirement({ ...selectedReq, status: 'excluded' });
+                        setSelectedReqId(null);
+                      }
+                    }}
+                  >
+                    분석 범위에서 제외 (Exclude)
+                  </button>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button 
@@ -354,14 +396,14 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                     style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }} 
                     onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}
                   >
-                    Flag for Manual
+                    수동 테스트 플래그
                   </button>
                   <button 
                     onClick={() => updateRequirement({ ...selectedReq, status: 'approved' })}
                     style={{ background: '#4f46e5', color: '#ffffff', border: '1px solid #4338ca', borderRadius: '6px', padding: '10px 28px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s' }} 
                     onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}
                   >
-                    Approve Context
+                    요구사항 승인
                   </button>
                 </div>
               </div>
