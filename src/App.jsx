@@ -5,7 +5,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { UploadScreen } from './components/screens/UploadScreen';
 import { AnalysisScreen } from './components/screens/AnalysisScreen';
 import { TCScreen } from './components/screens/TCScreen';
-import { projectStore, PersistedProjectState } from './services/storage/projectStore';
+import { projectStore } from './services/storage/projectStore';
 
 export default function App() {
   const [screen, setScreen] = useState('upload');
