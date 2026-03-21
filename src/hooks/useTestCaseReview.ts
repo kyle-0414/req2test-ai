@@ -27,7 +27,9 @@ export function useTestCaseReview(projectId?: string) {
 
   function createDrafts(projectIdArg: string, requirements: RequirementItem[]) {
     const id = projectId || projectIdArg;
-    const drafts = generateDraftTestCases(id, requirements);
+    const project = projectStore.getProject(id);
+    const globalPreconditions = project?.documentMetadata?.preconditions || [];
+    const drafts = generateDraftTestCases(id, requirements, globalPreconditions);
     saveTestCases(drafts);
   }
 

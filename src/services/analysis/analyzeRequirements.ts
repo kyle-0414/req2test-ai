@@ -1,10 +1,16 @@
 import { AnalysisSummary } from "../../features/analysis/model";
 import { RequirementItem } from "../../features/requirements/model";
 import { analyzeRequirementsWithLLM } from "./analyzeRequirementsWithLLM";
+import { preprocessDocument } from "./documentPreprocessor";
 
 export interface AnalyzeRequirementsResult {
   requirements: RequirementItem[];
   summary: AnalysisSummary;
+  documentMetadata?: {
+    preconditions: string[];
+    objectives: string[];
+    priorities: string[];
+  };
 }
 
 function inferType(text: string): RequirementItem["type"] {
@@ -34,13 +40,21 @@ export async function analyzeRequirements(
   sourceDocumentId: string,
   text: string
 ): Promise<AnalyzeRequirementsResult> {
+  // 0. Preprocess the document for structure
+  const { sections, metadata, cleanedText } = preprocessDocument(text);
+  console.log(`[analyzeRequirements] Preprocessed document: found ${sections.length} sections.`);
 
   // 1. Try LLM path first
   try {
     console.log("[analyzeRequirements] Attempting LLM-based requirement analysis...");
-    const result = await analyzeRequirementsWithLLM(projectId, sourceDocumentId, text);
+    const result = await analyzeRequirementsWithLLM(projectId, sourceDocumentId, cleanedText);
     console.log("[analyzeRequirements] LLM-based analysis succeeded.");
-    return result;
+    
+    // Enrich with metadata
+    return {
+      ...result,
+      documentMetadata: metadata,
+    };
   } catch (error) {
     if (error instanceof Error) {
       console.warn("[analyzeRequirements] LLM analysis failed, falling back to heuristic:", error.message);
@@ -49,8 +63,9 @@ export async function analyzeRequirements(
     }
   }
 
-  // 2. Fallback to heuristic-based extraction for MVP mock phase
-  const lines = text
+  // 2. Fallback to heuristic-based extraction
+  // Even in fallback, we should leverage cleanedText or filtered lines
+  const lines = cleanedText
     .split(/\n+/)
     .map((line) => line.replace(/^[-*\d.\s]+/, "").trim())
     .filter((line) => line.length > 5);
@@ -82,5 +97,9 @@ export async function analyzeRequirements(
     generatedTestCases: requirements.length,
   };
 
-  return { requirements, summary };
+  return { 
+    requirements, 
+    summary,
+    documentMetadata: metadata,
+  };
 }

@@ -18,6 +18,11 @@ export interface PersistedProjectState {
   requirements: RequirementItem[];
   testCases: TestCaseDraft[];
   analysisSummary: AnalysisSummary | null;
+  documentMetadata?: {
+    preconditions: string[];
+    objectives: string[];
+    priorities: string[];
+  };
 }
 
 const PROJECTS_KEY = "req2test_projects";
@@ -129,6 +134,14 @@ export const projectStore = {
     const project = projectStore.getProject(projectId);
     if (project) {
       project.lastSourceInfo = info;
+      projectStore.saveProject(project);
+    }
+  },
+
+  updateDocumentMetadata: (projectId: string, metadata: any) => {
+    const project = projectStore.getProject(projectId);
+    if (project) {
+      project.documentMetadata = metadata;
       projectStore.saveProject(project);
     }
   }

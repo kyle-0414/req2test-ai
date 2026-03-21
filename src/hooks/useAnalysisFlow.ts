@@ -44,6 +44,9 @@ export function useAnalysisFlow(projectId?: string) {
     if (id) {
       projectStore.updateRequirements(id, result.requirements);
       projectStore.updateAnalysisSummary(id, result.summary);
+      if (result.documentMetadata) {
+        projectStore.updateDocumentMetadata(id, result.documentMetadata);
+      }
     }
   }
 
