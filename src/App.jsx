@@ -127,7 +127,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.18 }}
-              style={{ height: '100%' }}
+              style={{ height: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}
             >
               {renderMain()}
             </motion.div>

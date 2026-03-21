@@ -194,7 +194,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
       </div>
 
       {/* Main Layout: 3 Columns */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
         
         {/* Left Panel: Source Viewer (26%) */}
         <div style={{
@@ -382,7 +382,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
 
         {/* Right Panel: Review Detail Workspace (42%) */}
         <div style={{
-          flex: '1', background: '#ffffff', display: 'flex', flexDirection: 'column', position: 'relative'
+          flex: '1', background: '#ffffff', display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 0
         }}>
           {selectedReq ? (
             <>
@@ -432,10 +432,10 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
               </div>
 
               {/* Scrollable Content */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '28px', display: 'flex', flexDirection: 'column', gap: '32px', background: '#f8fafc' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '28px 28px 28px 28px', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '32px', background: '#f8fafc' }}>
                 
                 {/* Section B: Requirement Text Block */}
-                <div>
+                <div style={{ flexShrink: 0 }}>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> 근거 스펙 (Source Claim)</span>
                   </div>
@@ -452,7 +452,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 </div>
 
                 {/* Section B-2: Normalized Text (editable in edit mode) */}
-                <div>
+                <div style={{ flexShrink: 0 }}>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Cpu size={13} /> 정제된 요구사항 (AI)</span>
                     {isEditing && <span style={{ fontSize: '10px', color: '#4f46e5', fontWeight: '700', background: '#eef2ff', padding: '2px 8px', borderRadius: '4px' }}>편집 중</span>}
@@ -482,7 +482,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 </div>
 
                 {/* Section C: AI Interpretation (type + automation — editable in edit mode) */}
-                <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <div style={{ flexShrink: 0, background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                    <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', background: '#ffffff', fontSize: '12px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                      <Cpu size={14} color="#4f46e5" strokeWidth={2.5} /> AI 분석 및 분류
                    </div>
@@ -528,7 +528,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
 
                 {/* Section E: Review Warning Box (If needed) */}
                 {selectedReq.status === 'review_needed' && (
-                  <div style={{ background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', padding: '20px', display: 'flex', gap: '16px', alignItems: 'flex-start', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <div style={{ flexShrink: 0, background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', padding: '20px', display: 'flex', gap: '16px', alignItems: 'flex-start', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                     <div style={{ color: '#d97706', background: '#fef3c7', padding: '8px', borderRadius: '8px' }}>
                       <AlertTriangle size={18} strokeWidth={2.5} />
                     </div>
@@ -548,7 +548,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 )}
 
                 {/* Section D: Derived Test Points */}
-                <div>
+                <div style={{ flexShrink: 0 }}>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Layers size={13} strokeWidth={2.5} /> 연관 검증 파라미터 (Test Points)
                   </div>
@@ -569,44 +569,98 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
               </div>
 
               {/* Section F: Sticky Action Bar */}
-              <div style={{ position: 'sticky', bottom: 0, padding: '20px 28px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, boxShadow: '0 -4px 6px -4px rgba(0,0,0,0.02)' }}>
+              <div style={{ position: 'sticky', bottom: 0, padding: '16px 28px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, boxShadow: '0 -4px 6px -4px rgba(0,0,0,0.04)' }}>
+                {/* Left: Destructive action */}
                 <div>
                   {!isEditing && (
                     <button
-                      style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s', padding: '6px 0', outline: 'none' }}
-                      onMouseEnter={e=>e.currentTarget.style.color='#ef4444'}
-                      onMouseLeave={e=>e.currentTarget.style.color='#64748b'}
+                      className="btn-tooltip"
+                      style={{
+                        background: '#ffffff', border: '1px solid #fca5a5',
+                        borderRadius: '6px', padding: '8px 14px', fontSize: '13px',
+                        color: '#dc2626', fontWeight: '600', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        transition: 'all 0.15s'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; }}
                       onClick={() => {
-                        if (window.confirm('이 요구사항을 분석 범위에서 제외하시겠습니까?')) {
+                        if (window.confirm('이 요구사항을 분석 대상에서 제외합니다.\n제외된 항목은 테스트 케이스 생성에 포함되지 않습니다.')) {
                           updateRequirement({ ...selectedReq, status: 'excluded' });
                           setSelectedReqId(null);
                         }
                       }}
+                      data-tooltip="이 요구사항을 분석 대상에서 완전히 제외합니다"
                     >
-                      분석 범위에서 제외 (Exclude)
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                      제외
                     </button>
                   )}
                 </div>
+
+                {/* Right: Classification + Primary action */}
                 {!isEditing ? (
-                  <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {/* 수동 전용 버튼 */}
                     <button
+                      className="btn-tooltip"
                       onClick={() => updateRequirement({ ...selectedReq, status: 'review_needed', automationCandidate: false })}
-                      style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}
-                      onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}
+                      style={{
+                        background: '#ffffff', color: '#475569',
+                        border: `1px solid ${selectedReq.status === 'review_needed' && !selectedReq.automationCandidate ? '#94a3b8' : '#e2e8f0'}`,
+                        borderRadius: '6px', padding: '9px 16px', fontSize: '13px', fontWeight: '600',
+                        cursor: 'pointer', transition: 'all 0.15s', boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+                      data-tooltip="이 요구사항을 비자동화(수동 테스트) 대상으로 설정합니다"
                     >
-                      수동 테스트 플래그
+                      수동 전용으로 설정
                     </button>
-                    <button
-                      onClick={() => updateRequirement({ ...selectedReq, status: 'approved' })}
-                      style={{ background: selectedReq.status === 'approved' ? '#f1f5f9' : '#4f46e5', color: selectedReq.status === 'approved' ? '#475569' : '#ffffff', border: selectedReq.status === 'approved' ? '1px solid #cbd5e1' : '1px solid #4338ca', borderRadius: '6px', padding: '10px 28px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: selectedReq.status === 'approved' ? 'none' : '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s' }}
-                      onMouseEnter={e=>{ if(selectedReq.status !== 'approved') e.currentTarget.style.background='#4338ca'; }}
-                      onMouseLeave={e=>{ if(selectedReq.status !== 'approved') e.currentTarget.style.background='#4f46e5'; }}
-                    >
-                      {selectedReq.status === 'approved' ? '✓ 승인됨' : '요구사항 승인'}
-                    </button>
+                    {/* 구분선 */}
+                    <div style={{ width: '1px', height: '32px', background: '#e2e8f0' }} />
+
+                    {/* 승인 버튼 */}
+                    {selectedReq.status === 'approved' ? (
+                      <button
+                        className="btn-tooltip"
+                        onClick={() => updateRequirement({ ...selectedReq, status: 'review_needed' })}
+                        style={{
+                          background: '#f0fdf4', color: '#15803d',
+                          border: '1px solid #bbf7d0', borderRadius: '6px',
+                          padding: '9px 22px', fontSize: '13px', fontWeight: '700',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                          transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; }}
+                        data-tooltip="클릭하면 승인을 취소합니다"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        승인 완료
+                      </button>
+                    ) : (
+                      <button
+                        className="btn-tooltip"
+                        onClick={() => updateRequirement({ ...selectedReq, status: 'approved' })}
+                        style={{
+                          background: '#4f46e5', color: '#ffffff',
+                          border: '1px solid #4338ca', borderRadius: '6px',
+                          padding: '9px 22px', fontSize: '13px', fontWeight: '700',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                          boxShadow: '0 2px 4px rgba(79,70,229,0.2)', transition: 'background 0.15s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#4338ca'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#4f46e5'}
+                        data-tooltip="요구사항 분석을 완료하고 테스트 케이스 생성 단계로 넘깁니다"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        요구사항 승인
+                      </button>
+                    )}
                   </div>
                 ) : (
-                  <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>위의 저장 버튼으로 변경사항을 적용하세요.</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>위의 저장 버튼으로 변경사항을 적용하세요.</div>
                 )}
               </div>
             </>
