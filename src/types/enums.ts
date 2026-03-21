@@ -1,5 +1,5 @@
 export type RequirementStatus = "uploaded" | "analyzed" | "review_needed" | "approved";
-export type RequirementType = "screen_navigation" | "display" | "input" | "exception" | "popup" | "filter" | "permission" | "save" | "other";
+export type RequirementType = "screen_navigation" | "display" | "input" | "exception" | "state_validation" | "save" | "filter" | "permission" | "other";
 export type ConfidenceLevel = "high" | "medium" | "low";
 export type TestCaseStatus = "draft" | "approved" | "rejected" | "manual_only";
 export type PriorityLevel = "high" | "medium" | "low";

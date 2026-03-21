@@ -43,39 +43,52 @@ export function generateDraftTestCases(
   requirements: RequirementItem[],
   globalPreconditions: string[] = []
 ): TestCaseDraft[] {
-  // Group similar requirements in the future, for now focus on per-requirement quality
   return requirements.map((req, index) => {
-    // Generate a short scenario title
+    // 1. Title: Use the normalized text (should already be a scenario title from LLM)
     let title = req.normalizedText;
-    if (title.length > 25) {
-      title = `${req.type === 'exception' ? '[예외] ' : ''}${req.normalizedText.substring(0, 20)}...`;
+    // Fallback if title is too long or not scenario-formatted
+    if (!title.includes("검증") && title.length > 30) {
+      title = `${req.normalizedText.substring(0, 25)}... 검증`;
     }
-    
-    // Better title based on type
-    if (req.type === "screen_navigation") title = `${req.normalizedText} 화면 진입 확인`;
-    else if (req.type === "display") title = `${req.normalizedText} 정보 노출 확인`;
-    else if (req.type === "exception") title = `${req.normalizedText} 대응 확인`;
 
-    const objective = `구사항 '${req.normalizedText}'이(가) 시스템에서 올바르게 설계 및 구현되었는지 검증한다.`;
+    // 2. Objective
+    const objective = `${req.normalizedText} 시나리오가 시스템 요구사항에 따라 올바르게 동작하는지 확인한다.`;
     
-    const preconditions = [...globalPreconditions];
+    // 3. Preconditions: Combine global and requirement-specific ones
+    const preconditions = [...(req.preconditions || []), ...globalPreconditions];
     if (preconditions.length === 0) {
-      preconditions.push("대상 화면에 진입 및 로그인 상태여야 한다.");
+      preconditions.push("시스템에 정상적으로 접근 가능한 상태여야 한다.");
     }
 
-    const steps = generateStepsForType(req);
-    const expectedResults: ExpectedResult[] = [
-      { order: 1, description: `${req.normalizedText} 요구사항이 화면에 올바르게 적용되어야 한다.` }
-    ];
+    // 4. Steps & Expected Results: Derived from AI Test Points
+    const steps: TestStep[] = [];
+    const expectedResults: ExpectedResult[] = [];
 
-    if (req.type === "screen_navigation") {
-      expectedResults[0].description = "목표한 화면으로 정상적으로 이동되어야 한다.";
-    } else if (req.type === "exception") {
-      expectedResults[0].description = "시스템 오류 없이 안내 메시지가 정상 노출되어야 한다.";
+    if (req.selectedTestPoints && req.selectedTestPoints.length > 0) {
+      // Use test points as steps/expected results
+      req.selectedTestPoints.forEach((point, i) => {
+        steps.push({ 
+          order: i + 1, 
+          action: `${point} 항목에 대한 조작 또는 상태를 확인한다.` 
+        });
+        expectedResults.push({ 
+          order: i + 1, 
+          description: `${point} 결과값이 기대사항과 일치해야 한다.` 
+        });
+      });
+    } else {
+      // Generic fallback based on type
+      steps.push({ order: 1, action: "대상 화면 또는 기능에 접근한다." });
+      steps.push({ order: 2, action: `${req.normalizedText}와 관련된 사용자 동작을 수행한다.` });
+      
+      expectedResults.push({ 
+        order: 1, 
+        description: `${req.normalizedText} 요구사항이 화면에 올바르게 적용되어 정상 동작해야 한다.` 
+      });
     }
 
     return {
-      id: `tc-${String(index + 1).padStart(3, "0")}`,
+      id: `tc-draft-${Date.now()}-${String(index + 1).padStart(3, "0")}`,
       projectId,
       linkedRequirementIds: [req.id],
       title,
@@ -87,11 +100,11 @@ export function generateDraftTestCases(
       status: "draft",
       automationCandidate: req.automationCandidate,
       automationSuitability: {
-        score: req.automationCandidate ? (req.confidence === 'high' ? 90 : 75) : 40,
+        score: req.automationCandidate ? (req.confidence === 'high' ? 90 : 75) : 35,
         level: req.automationCandidate ? "high" : "low",
         reasons: req.automationCandidate
-          ? ["구조화된 UI 요소", "반복 실행 가치가 높음", ...(req.ambiguityNotes && req.ambiguityNotes.length > 0 ? [`주의: ${req.ambiguityNotes[0]}`] : [])]
-          : ["사람의 판단이나 복잡한 환경 설정 필요", ...(req.ambiguityNotes && req.ambiguityNotes.length > 0 ? [`모호함: ${req.ambiguityNotes[0]}`] : [])],
+          ? ["안정적인 UI 감지 가능", "핵심 시나리오", ...(req.ambiguityNotes && req.ambiguityNotes.length > 0 ? [`주의: ${req.ambiguityNotes[0]}`] : [])]
+          : ["사람의 주관적 판단 필요", ...(req.ambiguityNotes && req.ambiguityNotes.length > 0 ? [`모호성: ${req.ambiguityNotes[0]}`] : [])],
       },
     };
   });

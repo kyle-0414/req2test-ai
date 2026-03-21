@@ -9,39 +9,47 @@ export interface LLMRequest {
 }
 
 export async function callLLM(request: LLMRequest): Promise<string> {
-  // Try to use a provided API key. Default to undefined.
-  const apiKey = (import.meta as any).env.VITE_OPENAI_API_KEY;
+  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
 
   if (!apiKey) {
-    throw new Error("No LLM API key configured in environment. API key is missing.");
+    throw new Error("Gemini API key is not configured. (VITE_GEMINI_API_KEY is missing)");
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  // Use the verified stable Flash model for this environment (2026.03 status)
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini", // Use a fast/cheap model by default
-      messages: [
-        { role: "system", content: request.systemPrompt },
-        { role: "user", content: request.userPrompt },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: `SYSTEM: ${request.systemPrompt}\n\nUSER: ${request.userPrompt}` }
+          ],
+        },
       ],
-      response_format: { type: "json_object" }, // ensure JSON output
-      temperature: 0.1,
+      generationConfig: {
+        maxOutputTokens: 4096,
+        temperature: 0.2,
+        responseMimeType: "application/json",
+      },
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`LLM API request failed with status ${response.status}`);
+    const errText = await response.text();
+    throw new Error(`Gemini API error (${response.status}): ${errText}`);
   }
 
   const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!content) {
-    throw new Error("No content found in LLM response");
+    throw new Error("Empty response from Gemini API");
   }
 
   return content;

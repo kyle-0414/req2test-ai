@@ -16,10 +16,6 @@ export interface RequirementItem {
   automationCandidate: boolean;
 
   ambiguityNotes: string[];
-  extractedFrom?: {
-    page?: number;
-    section?: string;
-    lineStart?: number;
-    lineEnd?: number;
-  };
+  selectedTestPoints?: string[];
+  preconditions?: string[];
 }
