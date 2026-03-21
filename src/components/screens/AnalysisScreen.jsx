@@ -1,8 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useAnalysisFlow } from '../../hooks/useAnalysisFlow';
-import { Search, FileText, CheckCircle, AlertTriangle, Cpu, Layers, Edit2, Filter, BookOpen, Zap, AlertCircle, LayoutList, Check, Target, SlidersHorizontal, Eye, AlignLeft } from 'lucide-react';
-import { Badge, ConfBadge } from '../ui/Badges';
+import { Search, FileText, CheckCircle, AlertTriangle, Cpu, Layers, Edit2, BookOpen, Zap, AlertCircle, LayoutList, Check, Target, SlidersHorizontal, AlignLeft } from 'lucide-react';
+import { ConfBadge } from '../ui/Badges';
 import { projectStore } from '../../services/storage/projectStore';
+
+// Helper: convert internal req ID → user-facing display ID (REQ-001 format)
+const getDisplayId = (reqId, reqList) => {
+  const idx = reqList.findIndex(r => r.id === reqId);
+  return idx >= 0 ? `REQ-${String(idx + 1).padStart(3, '0')}` : reqId;
+};
+
+const REQ_TYPE_OPTIONS = [
+  { value: 'screen_navigation', label: 'Screen Navigation' },
+  { value: 'display', label: 'Display' },
+  { value: 'input', label: 'Input' },
+  { value: 'exception', label: 'Exception' },
+  { value: 'state_validation', label: 'State Validation' },
+  { value: 'save', label: 'Save' },
+  { value: 'filter', label: 'Filter' },
+  { value: 'permission', label: 'Permission' },
+  { value: 'other', label: 'Other' },
+];
 
 export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "doc-001", projectId, sourceName = "PRD_v1.2.pdf", tokens = 2400, isImage = false }) => {
   const { requirements: reqs, summary, runAnalysis, state, updateRequirement, testPoints } = useAnalysisFlow(projectId);
@@ -32,7 +50,9 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
   }, [sourceText, sourceDocumentId, projectId, reqs.length, state, runAnalysis, summary]);
 
   const [selectedReqId, setSelectedReqId] = useState(null);
-  const [isOCRMode, setIsOCRMode] = useState(isImage);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState(null);
 
   useEffect(() => {
     if (reqs.length > 0) {
@@ -44,12 +64,56 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
     }
   }, [reqs, selectedReqId]);
 
+  // Close edit mode when selection changes
+  useEffect(() => {
+    setIsEditing(false);
+    setEditDraft(null);
+  }, [selectedReqId]);
+
   const selectedReq = reqs.find(r => r.id === selectedReqId) || null;
-  const selectedTestPoints = testPoints.filter(tp => tp.requirementId === selectedReqId);
+  // Use test points directly from the requirement item (from LLM output)
+  const selectedTestPoints = selectedReq?.selectedTestPoints || [];
 
   const totalReqs = summary?.totalExtracted || 0;
   const reviewCount = summary?.pendingReview || 0;
   const autoCount = summary?.autoCandidates || 0;
+  const approvedCount = reqs.filter(r => r.status === 'approved').length;
+
+  // Filtered reqs based on search query
+  const filteredReqs = reqs.filter(req => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      getDisplayId(req.id, reqs).toLowerCase().includes(q) ||
+      req.normalizedText?.toLowerCase().includes(q) ||
+      req.originalText?.toLowerCase().includes(q) ||
+      req.type?.toLowerCase().replace(/_/g, ' ').includes(q)
+    );
+  });
+
+  const handleStartEdit = () => {
+    setEditDraft({ ...selectedReq });
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditDraft(null);
+  };
+
+  const handleSaveEdit = () => {
+    if (editDraft) updateRequirement(editDraft);
+    setIsEditing(false);
+    setEditDraft(null);
+  };
+
+  const handleFinalizeClick = () => {
+    const pending = reqs.filter(r => r.status !== 'approved' && r.status !== 'excluded');
+    if (pending.length > 0) {
+      if (!window.confirm(`아직 ${pending.length}개 항목이 검토되지 않았습니다.\n계속 진행하시겠습니까?`)) return;
+    }
+    onGenerateTC(reqs);
+  };
 
   return (
     <div className="animate-in" style={{ 
@@ -96,16 +160,26 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 <span style={{ fontSize: '11px', fontWeight: '500', color: '#94a3b8' }}>items</span>
               </div>
             </div>
+            <div style={{ width: '1px', background: '#e2e8f0', height: '28px' }}></div>
+            {/* Reviewed progress counter */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reviewed</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                <span style={{ fontSize: '18px', fontWeight: '600', color: totalReqs > 0 && approvedCount === totalReqs ? '#059669' : '#1e293b' }}>{approvedCount}</span>
+                <span style={{ fontSize: '11px', fontWeight: '500', color: '#94a3b8' }}>/ {totalReqs}</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button style={{
-            background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1',
+          {/* Settings — disabled until implemented */}
+          <button disabled style={{
+            background: '#f8fafc', color: '#94a3b8', border: '1px solid #e2e8f0',
             borderRadius: '6px', padding: '8px 14px', fontSize: '13px', fontWeight: '600',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.02)', transition: 'background 0.2s'
-          }} onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}>
+            cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px',
+            opacity: 0.55, boxShadow: 'none'
+          }}>
             <SlidersHorizontal size={14} /> Settings
           </button>
           <button style={{
@@ -113,7 +187,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
             borderRadius: '6px', padding: '8px 18px', fontSize: '13px', fontWeight: '600',
             display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
             boxShadow: '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s'
-          }} onClick={() => onGenerateTC(reqs)} onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}>
+          }} onClick={handleFinalizeClick} onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}>
             <CheckCircle size={14} /> Finalize to Test Cases
           </button>
         </div>
@@ -127,21 +201,11 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
           flex: '0 0 26%', borderRight: '1px solid #e2e8f0', background: '#f8fafc',
           display: 'flex', flexDirection: 'column'
         }}>
-          {/* Panel Header */}
+          {/* Panel Header - simplified, no OCR toggle */}
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#ffffff', zIndex: 2 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <BookOpen size={15} color="#64748b" /> Source Reference
-              </div>
-              <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '6px', padding: '2px' }}>
-                <button 
-                  style={{ background: !isOCRMode ? '#ffffff' : 'transparent', color: !isOCRMode ? '#1e293b' : '#64748b', border: 'none', borderRadius: '4px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', boxShadow: !isOCRMode ? '0 1px 2px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.15s' }}
-                  onClick={() => setIsOCRMode(false)}
-                >Raw</button>
-                <button 
-                  style={{ background: isOCRMode ? '#ffffff' : 'transparent', color: isOCRMode ? '#1e293b' : '#64748b', border: 'none', borderRadius: '4px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', boxShadow: isOCRMode ? '0 1px 2px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.15s' }}
-                  onClick={() => setIsOCRMode(true)}
-                >OCR</button>
               </div>
             </div>
             
@@ -162,14 +226,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 padding: '24px', fontSize: '13px', color: '#334155', lineHeight: '1.65',
                 whiteSpace: 'pre-line', boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
               }}>
-                {isOCRMode ? (
-                  <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '12px', color: '#475569', lineHeight: '1.6' }}>
-                    <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', borderBottom: '1px dashed #cbd5e1', paddingBottom: '8px', marginBottom: '16px', letterSpacing: '0.05em' }}>[ OCR TEXT EXTRACTION LAYER ]</div>
-                    {sourceText}
-                  </div>
-                ) : (
-                  sourceText
-                )}
+                {sourceText}
               </div>
             ) : (
               <div style={{
@@ -200,8 +257,14 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 <Target size={15} color="#4f46e5" strokeWidth={2.5} /> 분석 큐
                 <span style={{ background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: '600', marginLeft: '2px' }}>{totalReqs}</span>
               </div>
-              <button style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px 10px', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', transition: 'background 0.2s' }} onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}>
-                <Filter size={13} /> 필터
+              {/* Filter button - disabled until implemented */}
+              <button disabled style={{
+                background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px',
+                padding: '6px 10px', color: '#94a3b8', cursor: 'not-allowed',
+                display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600',
+                opacity: 0.6
+              }}>
+                필터
               </button>
             </div>
             
@@ -211,8 +274,11 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 width: '100%', padding: '8px 12px 8px 34px', borderRadius: '6px',
                 border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', background: '#ffffff',
                 boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)', transition: 'border-color 0.2s',
-                color: '#1e293b'
-              }}/>
+                color: '#1e293b', boxSizing: 'border-box'
+              }}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
             </div>
           </div>
           
@@ -230,27 +296,36 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>AI Analyzing Context...</div>
                 <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#64748b', maxWidth: '80%' }}>Extracting requirements and identifying test points.</div>
               </div>
-            ) : reqs.length > 0 ? reqs.map(req => {
+            ) : filteredReqs.length > 0 ? filteredReqs.map((req) => {
               const isSelected = selectedReqId === req.id;
               const isReview = req.status === 'review_needed';
+              const isApproved = req.status === 'approved';
+              const isExcluded = req.status === 'excluded';
               const isAuto = req.automationCandidate;
+              const displayId = getDisplayId(req.id, reqs);
+              // Status-based left bar color
+              const barColor = isSelected ? '#4f46e5' : isApproved ? '#059669' : isReview ? '#d97706' : isExcluded ? '#94a3b8' : '#e2e8f0';
 
               return (
-                <div key={req.id} onClick={() => setSelectedReqId(req.id)} style={{
-                  padding: '14px 16px', borderRadius: '8px', cursor: 'pointer',
+                <div key={req.id} onClick={() => !isExcluded && setSelectedReqId(req.id)} style={{
+                  padding: '14px 16px', borderRadius: '8px', cursor: isExcluded ? 'default' : 'pointer',
                   background: '#ffffff',
                   border: `1px solid ${isSelected ? '#4f46e5' : '#e2e8f0'}`,
                   boxShadow: isSelected ? '0 0 0 1px #4f46e5, 0 4px 6px -1px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.03)',
                   display: 'flex', flexDirection: 'column', gap: '10px',
                   position: 'relative', overflow: 'hidden',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  opacity: isExcluded ? 0.4 : 1,
                 }}>
-                  {isSelected && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: '#4f46e5' }}></div>}
+                  {/* Status left bar - always visible */}
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: barColor }} />
                   
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: isSelected ? '6px' : '0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: isSelected ? '#4338ca' : '#334155' }}>{req.id || 'REQ-01'}</span>
-                      {isReview && <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', background: '#fef3c7', color: '#b45309', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase' }}><AlertTriangle size={10} strokeWidth={2.5} /> Review</span>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: isSelected ? '#4338ca' : '#334155' }}>{displayId}</span>
+                      {isReview && <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', background: '#fef3c7', color: '#b45309', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '3px', textTransform: 'uppercase' }}><AlertTriangle size={9} strokeWidth={2.5} /> Review</span>}
+                      {isApproved && <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', background: '#f0fdf4', color: '#15803d', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '3px', textTransform: 'uppercase' }}><Check size={9} strokeWidth={2.5} /> Done</span>}
+                      {isExcluded && <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', background: '#f1f5f9', color: '#64748b', borderRadius: '4px', textTransform: 'uppercase' }}>Excluded</span>}
                     </div>
                     <div>
                       <ConfBadge conf={req.confidence?.charAt(0).toUpperCase() + req.confidence?.slice(1)} />
@@ -259,8 +334,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                   
                   <div style={{ 
                     fontSize: '13px', color: '#1e293b', fontWeight: isSelected ? '500' : '400', 
-                    lineHeight: '1.5', paddingLeft: isSelected ? '6px' : '0', 
-                    // Standard properties for webkit-line-clamp
+                    lineHeight: '1.5', paddingLeft: '10px',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
@@ -273,13 +347,23 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                     {req.normalizedText || req.originalText || "내용 없음"}
                   </div>
                   
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: isSelected ? '6px' : '0' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', textTransform: 'capitalize' }}>{req.type?.replace('_', ' ') || 'Functional'}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: '10px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '500', color: '#64748b', textTransform: 'capitalize' }}>{req.type?.replace(/_/g, ' ') || 'Functional'}</span>
                     {isAuto && <span style={{ fontSize: '11px', fontWeight: '600', color: '#059669', display: 'flex', alignItems: 'center', gap: '4px' }}><Zap size={12} strokeWidth={2.5} fill="#059669" fillOpacity={0.2} /> Auto-Candidate</span>}
                   </div>
                 </div>
               );
-            }) : (
+            }) : reqs.length > 0 ? (
+              // Search returned no results
+              <div style={{
+                border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '32px 24px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                textAlign: 'center', background: '#ffffff',
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '4px' }}>검색 결과 없음</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>'"{searchQuery}"와 일치하는 항목이 없습니다.</div>
+              </div>
+            ) : (
               <div style={{
                 border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '48px 24px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -305,20 +389,46 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
               {/* Section A: Header */}
               <div style={{ padding: '24px 28px 20px', borderBottom: '1px solid #e2e8f0', background: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>{selectedReq.id || 'Detail Workspace'}</h2>
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>{getDisplayId(selectedReq.id, reqs)}</h2>
                   {selectedReq.status === 'review_needed' ? (
                     <span style={{ fontSize: '11px', padding: '4px 10px', background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', borderRadius: '6px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                       <AlertCircle size={12} strokeWidth={2.5} /> Needs Review
                     </span>
-                  ) : (
+                  ) : selectedReq.status === 'approved' ? (
                     <span style={{ fontSize: '11px', padding: '4px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: '6px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                       <Check size={12} strokeWidth={2.5} /> Ready
                     </span>
-                  )}
+                  ) : null}
                 </div>
-                <button style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 12px', fontSize: '12px', color: '#475569', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', transition: 'background 0.2s' }} onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}>
-                  <Edit2 size={13} strokeWidth={2.5} /> Edit Item
-                </button>
+                {!isEditing ? (
+                  <button
+                    onClick={handleStartEdit}
+                    style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 12px', fontSize: '12px', color: '#475569', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', transition: 'background 0.2s' }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
+                    onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}
+                  >
+                    <Edit2 size={13} strokeWidth={2.5} /> Edit Item
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={handleCancelEdit}
+                      style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 12px', fontSize: '12px', color: '#475569', cursor: 'pointer', fontWeight: '600', transition: 'background 0.2s' }}
+                      onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
+                      onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleSaveEdit}
+                      style={{ background: '#4f46e5', border: '1px solid #4338ca', borderRadius: '6px', padding: '8px 14px', fontSize: '12px', color: '#ffffff', cursor: 'pointer', fontWeight: '600', boxShadow: '0 1px 3px rgba(79,70,229,0.2)', transition: 'background 0.2s' }}
+                      onMouseEnter={e=>e.currentTarget.style.background='#4338ca'}
+                      onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}
+                    >
+                      저장
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Scrollable Content */}
@@ -341,36 +451,77 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                   </div>
                 </div>
 
-                {/* Section B-2: Normalized Text */}
+                {/* Section B-2: Normalized Text (editable in edit mode) */}
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Cpu size={13} /> 정제된 요구사항 (AI)</span>
+                    {isEditing && <span style={{ fontSize: '10px', color: '#4f46e5', fontWeight: '700', background: '#eef2ff', padding: '2px 8px', borderRadius: '4px' }}>편집 중</span>}
                   </div>
-                  <div style={{
-                    width: '100%', padding: '16px 20px', borderRadius: '8px',
-                    background: '#f0f9ff', fontSize: '14px', color: '#0369a1', lineHeight: '1.6', 
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                    border: '1px solid #bae6fd', borderLeft: '4px solid #38bdf8'
-                  }}>
-                    {selectedReq.normalizedText}
-                  </div>
+                  {isEditing ? (
+                    <textarea
+                      value={editDraft?.normalizedText || ''}
+                      onChange={e => setEditDraft(prev => ({ ...prev, normalizedText: e.target.value }))}
+                      style={{
+                        width: '100%', padding: '16px 20px', borderRadius: '8px',
+                        background: '#ffffff', fontSize: '14px', color: '#0369a1', lineHeight: '1.6',
+                        border: '2px solid #4f46e5', boxShadow: '0 0 0 3px rgba(79,70,229,0.08)',
+                        resize: 'vertical', outline: 'none', minHeight: '100px',
+                        fontFamily: 'Inter, sans-serif', boxSizing: 'border-box'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '100%', padding: '16px 20px', borderRadius: '8px',
+                      background: '#f0f9ff', fontSize: '14px', color: '#0369a1', lineHeight: '1.6',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                      border: '1px solid #bae6fd', borderLeft: '4px solid #38bdf8'
+                    }}>
+                      {selectedReq.normalizedText}
+                    </div>
+                  )}
                 </div>
 
-                {/* Section C: AI Interpretation */}
+                {/* Section C: AI Interpretation (type + automation — editable in edit mode) */}
                 <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                    <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', background: '#ffffff', fontSize: '12px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                      <Cpu size={14} color="#4f46e5" strokeWidth={2.5} /> AI 분석 및 분류
                    </div>
                    <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', background: '#f8fafc' }}>
                      <div>
-                       <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Inferred Category</div>
-                       <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '600', textTransform: 'capitalize' }}>{selectedReq.type?.replace('_', ' ') || 'Functional Requirement'}</div>
+                       <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Inferred Category</div>
+                       {isEditing ? (
+                         <select
+                           value={editDraft?.type || 'other'}
+                           onChange={e => setEditDraft(prev => ({ ...prev, type: e.target.value }))}
+                           style={{ fontSize: '13px', color: '#1e293b', fontWeight: '600', border: '1px solid #4f46e5', borderRadius: '6px', padding: '6px 10px', background: '#ffffff', outline: 'none', cursor: 'pointer', width: '100%' }}
+                         >
+                           {REQ_TYPE_OPTIONS.map(opt => (
+                             <option key={opt.value} value={opt.value}>{opt.label}</option>
+                           ))}
+                         </select>
+                       ) : (
+                         <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '600', textTransform: 'capitalize' }}>{selectedReq.type?.replace(/_/g, ' ') || 'Functional Requirement'}</div>
+                       )}
                      </div>
                      <div>
-                       <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Automation Path</div>
-                       <div style={{ fontSize: '14px', color: selectedReq.automationCandidate ? '#059669' : '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                         {selectedReq.automationCandidate ? <><Zap size={14} strokeWidth={2.5} fill="#059669" fillOpacity={0.2} /> Highly Automatable</> : 'Manual Testing Advisory'}
-                       </div>
+                       <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Automation Path</div>
+                       {isEditing ? (
+                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                           <input
+                             type="checkbox"
+                             checked={editDraft?.automationCandidate || false}
+                             onChange={e => setEditDraft(prev => ({ ...prev, automationCandidate: e.target.checked }))}
+                             style={{ width: '16px', height: '16px', accentColor: '#4f46e5', cursor: 'pointer' }}
+                           />
+                           <span style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
+                             {editDraft?.automationCandidate ? 'Highly Automatable' : 'Manual Testing Advisory'}
+                           </span>
+                         </label>
+                       ) : (
+                         <div style={{ fontSize: '14px', color: selectedReq.automationCandidate ? '#059669' : '#475569', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                           {selectedReq.automationCandidate ? <><Zap size={14} strokeWidth={2.5} fill="#059669" fillOpacity={0.2} /> Highly Automatable</> : 'Manual Testing Advisory'}
+                         </div>
+                       )}
                      </div>
                    </div>
                 </div>
@@ -403,10 +554,10 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {selectedTestPoints.length > 0 ? selectedTestPoints.map((tp, idx) => (
-                      <div key={tp.id} style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '16px 20px', fontSize: '13px', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                      <div key={idx} style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '16px 20px', fontSize: '13px', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                         <div style={{ marginTop: '2px', color: '#94a3b8' }}><Target size={16} strokeWidth={2.5} /></div>
                         <div style={{ lineHeight: '1.6' }}>
-                          <span style={{ fontWeight: '600', color: '#1e293b' }}>검증 항목 #{idx + 1}:</span> {tp.title} - {tp.description}
+                          <span style={{ fontWeight: '600', color: '#1e293b' }}>검증 항목 #{idx + 1}:</span> {typeof tp === 'string' ? tp : `${tp.title} - ${tp.description}`}
                         </div>
                       </div>
                     )) : (
@@ -420,36 +571,43 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
               {/* Section F: Sticky Action Bar */}
               <div style={{ position: 'sticky', bottom: 0, padding: '20px 28px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, boxShadow: '0 -4px 6px -4px rgba(0,0,0,0.02)' }}>
                 <div>
-                  <button 
-                    style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s', padding: '6px 0', outline: 'none' }} 
-                    onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} 
-                    onMouseLeave={e=>e.currentTarget.style.color='#64748b'} 
-                    onClick={() => {
-                      if (window.confirm('이 요구사항을 분석 범위에서 제외하시겠습니까?')) {
-                        updateRequirement({ ...selectedReq, status: 'excluded' });
-                        setSelectedReqId(null);
-                      }
-                    }}
-                  >
-                    분석 범위에서 제외 (Exclude)
-                  </button>
+                  {!isEditing && (
+                    <button
+                      style={{ background: 'none', border: 'none', fontSize: '13px', color: '#64748b', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s', padding: '6px 0', outline: 'none' }}
+                      onMouseEnter={e=>e.currentTarget.style.color='#ef4444'}
+                      onMouseLeave={e=>e.currentTarget.style.color='#64748b'}
+                      onClick={() => {
+                        if (window.confirm('이 요구사항을 분석 범위에서 제외하시겠습니까?')) {
+                          updateRequirement({ ...selectedReq, status: 'excluded' });
+                          setSelectedReqId(null);
+                        }
+                      }}
+                    >
+                      분석 범위에서 제외 (Exclude)
+                    </button>
+                  )}
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button 
-                    onClick={() => updateRequirement({ ...selectedReq, status: 'review_needed', automationCandidate: false })}
-                    style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }} 
-                    onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}
-                  >
-                    수동 테스트 플래그
-                  </button>
-                  <button 
-                    onClick={() => updateRequirement({ ...selectedReq, status: 'approved' })}
-                    style={{ background: '#4f46e5', color: '#ffffff', border: '1px solid #4338ca', borderRadius: '6px', padding: '10px 28px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s' }} 
-                    onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}
-                  >
-                    요구사항 승인
-                  </button>
-                </div>
+                {!isEditing ? (
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      onClick={() => updateRequirement({ ...selectedReq, status: 'review_needed', automationCandidate: false })}
+                      style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '10px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}
+                      onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background='#ffffff'}
+                    >
+                      수동 테스트 플래그
+                    </button>
+                    <button
+                      onClick={() => updateRequirement({ ...selectedReq, status: 'approved' })}
+                      style={{ background: selectedReq.status === 'approved' ? '#f1f5f9' : '#4f46e5', color: selectedReq.status === 'approved' ? '#475569' : '#ffffff', border: selectedReq.status === 'approved' ? '1px solid #cbd5e1' : '1px solid #4338ca', borderRadius: '6px', padding: '10px 28px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', boxShadow: selectedReq.status === 'approved' ? 'none' : '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s' }}
+                      onMouseEnter={e=>{ if(selectedReq.status !== 'approved') e.currentTarget.style.background='#4338ca'; }}
+                      onMouseLeave={e=>{ if(selectedReq.status !== 'approved') e.currentTarget.style.background='#4f46e5'; }}
+                    >
+                      {selectedReq.status === 'approved' ? '✓ 승인됨' : '요구사항 승인'}
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>위의 저장 버튼으로 변경사항을 적용하세요.</div>
+                )}
               </div>
             </>
           ) : (
