@@ -14,9 +14,15 @@ export interface DocumentStructure {
   cleanedText: string;
 }
 
+/**
+ * Preprocesses the document to extract structural metadata (preconditions, objectives, etc.)
+ * but returns the FULL original text as `cleanedText` so the LLM has complete context.
+ * 
+ * We intentionally avoid filtering content here — the LLM is better at understanding
+ * which parts of the spec are meaningful requirements vs. structural headers.
+ */
 export function preprocessDocument(text: string): DocumentStructure {
   const lines = text.split("\n");
-  const sections: DocumentStructure["sections"] = [];
   const metadata: DocumentStructure["metadata"] = {
     preconditions: [],
     objectives: [],
@@ -31,73 +37,40 @@ export function preprocessDocument(text: string): DocumentStructure {
     { pattern: /^\[?목적\]?$/, type: "objective" as const },
   ];
 
-  let currentSection: typeof sections[0] | null = null;
+  // Light pass: only extract metadata (preconditions, objectives, priorities)
+  // Do NOT filter out any content from the text
+  let currentSectionType: DocumentStructure["sections"][0]["type"] | null = null;
 
-  lines.forEach((line, index) => {
+  lines.forEach((line) => {
     const trimmedLine = line.trim();
     if (!trimmedLine) return;
 
-    let foundPattern = false;
+    let foundSection = false;
     for (const { pattern, type } of sectionPatterns) {
       if (pattern.test(trimmedLine)) {
-        if (currentSection) {
-          currentSection.endIndex = index - 1;
-        }
-        currentSection = {
-          label: trimmedLine,
-          type,
-          startIndex: index,
-          endIndex: lines.length - 1,
-          content: "",
-        };
-        sections.push(currentSection);
-        foundPattern = true;
+        currentSectionType = type;
+        foundSection = true;
         break;
       }
     }
 
-    if (!foundPattern) {
-      if (!currentSection) {
-        // Handle text before any section label
-        currentSection = {
-          label: "초기 내용",
-          type: "requirement",
-          startIndex: 0,
-          endIndex: lines.length - 1,
-          content: "",
-        };
-        sections.push(currentSection);
-      }
-      currentSection.content += line + "\n";
-      
-      // Collect metadata
-      if (currentSection.type === "precondition") {
+    if (!foundSection && currentSectionType) {
+      if (currentSectionType === "precondition") {
         metadata.preconditions.push(trimmedLine);
-      } else if (currentSection.type === "objective") {
+      } else if (currentSectionType === "objective") {
         metadata.objectives.push(trimmedLine);
-      } else if (currentSection.type === "priority") {
+      } else if (currentSectionType === "priority") {
         metadata.priorities.push(trimmedLine);
       }
     }
   });
 
-  // If no sections found, treat everything as requirement
-  if (sections.length === 0) {
-    sections.push({
-      label: "전체",
-      type: "requirement",
-      startIndex: 0,
-      endIndex: lines.length - 1,
-      content: text,
-    });
-  }
+  // Pass the complete original text to the LLM — no content filtering
+  const cleanedText = text.trim();
 
-  // filter out "junk" from requirements - strictly speaking, we want to inform the LLM about these sections
-  const cleanedText = sections
-    .filter(s => s.type === "requirement" || s.type === "exception" || s.type === "other")
-    .map(s => s.content)
-    .join("\n")
-    .trim();
-
-  return { sections, metadata, cleanedText };
+  return {
+    sections: [], // Sections are no longer needed for LLM path
+    metadata,
+    cleanedText,
+  };
 }

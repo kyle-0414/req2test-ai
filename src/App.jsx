@@ -52,8 +52,16 @@ export default function App() {
     setSourceInfo(resolvedInfo);
     
     if (currentProject) {
+      const isNewText = currentProject.lastSourceText !== text;
+
       projectStore.updateSourceText(currentProject.projectId, text);
       projectStore.updateSourceInfo(currentProject.projectId, resolvedInfo);
+
+      if (isNewText) {
+        projectStore.updateRequirements(currentProject.projectId, []);
+        projectStore.updateAnalysisSummary(currentProject.projectId, null);
+      }
+
       projectStore.updateSessionState(currentProject.projectId, 'analysis');
     }
     setScreen('analysis');

@@ -3,15 +3,15 @@ import { AnalyzeRequirementsResult } from "./analyzeRequirements";
 import { callLLM } from "../api/llmClient";
 
 interface LLMRequirementOutput {
-  id?: string;
-  originalText?: string;
-  normalizedText?: string; // Korean interpreted scenario
+  sourceClaim?: string;    // Minimal quote from source spec (replaces originalText)
+  originalText?: string;   // Kept for backward compat
+  normalizedText?: string; // Independently written QA verification statement
   type?: string; 
   confidence?: "high" | "medium" | "low";
   priority?: "high" | "medium" | "low";
   automationCandidate?: boolean;
   ambiguityNotes?: string[];
-  testPoints?: string[]; // Context-specific verification points
+  testPoints?: string[];
 }
 
 interface LLMAnalysisOutput {
@@ -28,59 +28,64 @@ export async function analyzeRequirementsWithLLM(
   sourceDocumentId: string,
   text: string
 ): Promise<AnalyzeRequirementsResult> {
-  const systemPrompt = `You are a Senior QA Engineer and Requirements Strategist.
-Your goal is to transform raw, fragmented source text into structured, scenario-level verification units.
+  const systemPrompt = `You are a Senior QA Engineer with 10+ years of experience turning product specifications into rigorous, executable test requirements.
 
-### ANALYSIS WORKFLOW:
-1. **Understand Global Context**: Identify the core Feature Name, Objective, and Preconditions from the entire text.
-2. **Scenario-Based Structuring**: Group related sentences into high-level "Validation Scenarios".
-   - DO NOT clone sentences.
-   - DO NOT create items for structural labels like [목적], [사전조건], [우선순위].
-   - DO NOT treat Preconditions as testable requirements; use them as setup context.
-3. **Refine for QA**: For each scenario, generate a clear Korean title, a detailed description, and meaningful Test Points (검증 포인트).
+Your task is NOT to reformat or classify the input text.
+Your task is to READ the specification as a QA expert and DERIVE a complete set of verification requirements — including ones that are implied, inferred, or missing from the original text.
 
-### EXTRACTION RULES:
-- **Scenario Title**: Use a concise Korean name ending in "... 검증" (e.g., "버전 정보 화면 진입 검증").
-- **Deduplication**: Merge multiple mentions of the same functional behavior into one scenario.
-- **Categorization**: Use only these categories:
-  - screen_navigation (화면 이동)
-  - display (표시)
-  - input (입력)
-  - exception (예외 처리)
-  - state_validation (상태/속성 검증)
-  - save (저장)
-  - filter (필터)
-  - permission (권한)
-  - other (기타)
-- **Language**: All generated content (normalizedText, ambiguityNotes, testPoints) MUST be in Korean.
+### MINDSET:
+Think like a QA engineer who must guarantee this feature works correctly in production.
+Ask yourself: "What MUST be true for this feature to be considered working correctly?"
+Go beyond what is explicitly written. Surface hidden behaviors, edge cases, and implicit business rules.
+
+### DERIVATION RULES:
+1. **Independence**: Each requirement must be a self-contained, testable QA statement — NOT a copy or paraphrase of the source text.
+2. **New Language**: Write normalizedText in your own words as a QA professional. Never copy-paste from the source.
+3. **Coverage**: Derive requirements for ALL of the following where applicable:
+   - Happy path (정상 흐름)
+   - Edge cases and boundary conditions (경계값, 극단 케이스)
+   - Error/exception handling (오류 처리)
+   - State transitions (상태 변화)
+   - Data persistence (데이터 저장 / 유지)
+   - Permission and access control (권한)
+   - UI rendering accuracy (화면 표시 정확성)
+4. **No Duplication**: Do not create two requirements for the same verification point.
+5. **sourceClaim**: In the "sourceClaim" field, record the minimal relevant quote from the source text that justifies this requirement (1-2 sentences max). Leave empty string if it is an inferred requirement with no direct source sentence.
 
 ### OUTPUT JSON SCHEMA:
 {
   "summary": {
-    "featureName": "Name of the feature",
-    "objective": "Primary goal in Korean",
-    "preconditions": ["List of prerequisite states in Korean"]
+    "featureName": "Feature name in Korean",
+    "objective": "Primary QA objective — what must be guaranteed for this feature",
+    "preconditions": ["Prerequisites or initial state assumptions in Korean"]
   },
   "requirements": [
     {
-      "originalText": "The relevant snippet(s) from the source",
-      "normalizedText": "A clear, Korean scenario-based statement (e.g., '사용자가 Info 아이콘을 클릭했을 때 버전 정보 화면으로 정상 진입하는지 검증')",
+      "sourceClaim": "Minimal quote from the source spec this is based on (empty string if inferred)",
+      "normalizedText": "A clear, QA-authored Korean verification statement written independently. E.g. '사용자가 Info 아이콘을 클릭하면 버전 정보 화면으로 정상 진입해야 한다'",
       "type": "screen_navigation | display | input | exception | state_validation | save | filter | permission | other",
       "confidence": "high | medium | low",
       "priority": "high | medium | low",
       "automationCandidate": true | false,
-      "ambiguityNotes": ["Why is this scenario vague?"],
-      "testPoints": ["검증 포인트 1: ...", "검증 포인트 2: ..."]
+      "ambiguityNotes": ["Uncertainty or ambiguity that needs clarification from PM/Dev"],
+      "testPoints": ["검증 포인트 1: 구체적인 검증 기준", "검증 포인트 2: ..."]
     }
   ]
-}`;
+}
 
-  const userPrompt = `Analyze the following raw text and restructure it into validation scenarios:
+### LANGUAGE RULE:
+All output fields (normalizedText, ambiguityNotes, testPoints, summary fields) MUST be written in Korean.
+sourceClaim must be a direct quote from the input text — keep the original language of the source.`;
 
-=== SOURCE TEXT ===
+  const userPrompt = `Read the following product specification. As a Senior QA Engineer, derive a comprehensive set of verification requirements that would guarantee this feature works correctly.
+
+Do NOT copy the source text into normalizedText. Write each requirement as an independent QA statement in your own words.
+
+=== PRODUCT SPECIFICATION ===
 ${text}
-=== END TEXT ===
-`;
+=== END SPECIFICATION ===
+
+Now derive the verification requirements:`;
 
   const rawOutStr = await callLLM({ systemPrompt, userPrompt });
   
@@ -115,15 +120,15 @@ ${text}
       rType = "other";
     }
 
-    // Default title if not provided/formatted correctly
-    const titlePrefix = item.normalizedText?.split(' ')[0] || "요구사항";
+    // sourceClaim is the minimal source quote kept for traceability
+    const sourceClaim = item.sourceClaim ?? item.originalText ?? "";
 
     return {
       id: `req-llm-${Date.now()}-${String(index + 1).padStart(3, "0")}`,
       projectId,
       sourceDocumentId,
-      originalText: item.originalText || "Unknown source",
-      normalizedText: item.normalizedText || item.originalText || "내용 없음",
+      originalText: sourceClaim,
+      normalizedText: item.normalizedText || "내용 없음",
       type: rType,
       confidence,
       priority,

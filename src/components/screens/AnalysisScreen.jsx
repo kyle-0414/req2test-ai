@@ -35,8 +35,12 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
   const [isOCRMode, setIsOCRMode] = useState(isImage);
 
   useEffect(() => {
-    if (reqs.length > 0 && !selectedReqId) {
-      setSelectedReqId(reqs[0].id);
+    if (reqs.length > 0) {
+      if (!selectedReqId || !reqs.find(r => r.id === selectedReqId)) {
+        setSelectedReqId(reqs[0].id);
+      }
+    } else {
+      setSelectedReqId(null);
     }
   }, [reqs, selectedReqId]);
 
@@ -213,7 +217,20 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
           </div>
           
           <div style={{ flex: 1, overflowY: 'auto', background: '#f1f5f9', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 4px 6px -4px rgba(0,0,0,0.03)' }}>
-            {reqs.length > 0 ? reqs.map(req => {
+            {state === 'analyzing' ? (
+              <div style={{
+                border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '48px 24px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                textAlign: 'center', color: '#64748b', background: '#ffffff', height: '100%',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.01)'
+              }}>
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '100%', marginBottom: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="animate-spin" style={{ width: '24px', height: '24px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%' }} />
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' }}>AI Analyzing Context...</div>
+                <div style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#64748b', maxWidth: '80%' }}>Extracting requirements and identifying test points.</div>
+              </div>
+            ) : reqs.length > 0 ? reqs.map(req => {
               const isSelected = selectedReqId === req.id;
               const isReview = req.status === 'review_needed';
               const isAuto = req.automationCandidate;
@@ -310,15 +327,17 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                 {/* Section B: Requirement Text Block */}
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> 추출된 컨텍스트 (원본)</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> 근거 스펙 (Source Claim)</span>
                   </div>
                   <div style={{
                     width: '100%', padding: '16px 20px', borderRadius: '8px',
-                    background: '#ffffff', fontSize: '14px', color: '#1e293b', lineHeight: '1.6', 
+                    background: selectedReq.originalText ? '#ffffff' : '#f8fafc',
+                    fontSize: '14px', color: selectedReq.originalText ? '#1e293b' : '#94a3b8', lineHeight: '1.6', 
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
-                    border: '1px solid #e2e8f0', borderLeft: '4px solid #cbd5e1'
+                    border: '1px solid #e2e8f0', borderLeft: `4px solid ${selectedReq.originalText ? '#cbd5e1' : '#e2e8f0'}`,
+                    fontStyle: selectedReq.originalText ? 'normal' : 'italic'
                   }}>
-                    {selectedReq.originalText}
+                    {selectedReq.originalText || '추론된 요구사항 — 스펙에 직접 명시되지 않았으나 QA 관점에서 도출됨'}
                   </div>
                 </div>
 

@@ -15,7 +15,6 @@ export async function callLLM(request: LLMRequest): Promise<string> {
     throw new Error("Gemini API key is not configured. (VITE_GEMINI_API_KEY is missing)");
   }
 
-  // Switched to gemini-2.5-flash which has quota and is guaranteed to exist in the 2026 environment!
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
@@ -24,17 +23,20 @@ export async function callLLM(request: LLMRequest): Promise<string> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      // System instruction is passed separately so Gemini treats it as a true system directive,
+      // not just another user message. This is critical for instruction-following behavior.
+      systemInstruction: {
+        parts: [{ text: request.systemPrompt }],
+      },
       contents: [
         {
           role: "user",
-          parts: [
-            { text: `SYSTEM: ${request.systemPrompt}\n\nUSER: ${request.userPrompt}` }
-          ],
+          parts: [{ text: request.userPrompt }],
         },
       ],
       generationConfig: {
-        maxOutputTokens: 4096,
-        temperature: 0.2,
+        maxOutputTokens: 8192,
+        temperature: 0.4,  // Slightly higher to encourage creative derivation, not copying
         responseMimeType: "application/json",
       },
     }),
