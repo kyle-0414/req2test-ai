@@ -224,11 +224,17 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                   <div style={{ 
                     fontSize: '13px', color: '#1e293b', fontWeight: isSelected ? '500' : '400', 
                     lineHeight: '1.5', paddingLeft: isSelected ? '6px' : '0', 
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', 
-                    overflow: 'hidden', textOverflow: 'ellipsis',
-                    maxHeight: '3em' 
+                    // Standard properties for webkit-line-clamp
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    wordBreak: 'break-all',
+                    minHeight: '1.5em',
+                    maxHeight: '3em'
                   }}>
-                    {req.normalizedText || req.originalText}
+                    {req.normalizedText || req.originalText || "내용 없음"}
                   </div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: isSelected ? '6px' : '0' }}>

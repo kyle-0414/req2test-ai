@@ -68,7 +68,8 @@ export async function analyzeRequirements(
   const lines = cleanedText
     .split(/\n+/)
     .map((line) => line.replace(/^[-*\d.\s]+/, "").trim())
-    .filter((line) => line.length > 5);
+    // More strict filtering: must be at least 5 meaningful characters AND NOT just structural labels
+    .filter((line) => line.length >= 6 && !/^\[?.*(목적|사전조건|우선순위|요구사항).*\]?$/.test(line));
 
   const requirements: RequirementItem[] = lines.map((line, index) => {
     const confidence = inferConfidence(line);
