@@ -14,6 +14,7 @@ export default function App() {
   // App mostly handles screen switching and passes very minimal state
   const [sourceText, setSourceText] = useState('');
   const [extractedReqs, setExtractedReqs] = useState([]);
+  const [triggerGenerate, setTriggerGenerate] = useState(false);
   const [sourceInfo, setSourceInfo] = useState({ name: 'Manual Input', type: 'text', id: 'doc-001', tokens: 0 });
 
   // Initial restoration
@@ -60,6 +61,7 @@ export default function App() {
 
   const startGenerateTC = (reqs) => {
     setExtractedReqs(reqs);
+    setTriggerGenerate(true);
     if (currentProject) {
       projectStore.updateSessionState(currentProject.projectId, 'tc');
     }
@@ -72,7 +74,7 @@ export default function App() {
     switch (screen) {
       case 'upload':   return <UploadScreen onAnalyze={startAnalysis} text={sourceText} setText={handleTextChange} projectId={currentProject.projectId} />;
       case 'analysis': return <AnalysisScreen onGenerateTC={startGenerateTC} sourceText={sourceText} sourceDocumentId={sourceInfo.id} sourceName={sourceInfo.name} tokens={sourceInfo.tokens} isImage={['png', 'jpg'].includes(sourceInfo.type)} projectId={currentProject.projectId} />;
-      case 'tc':       return <TCScreen requirements={extractedReqs} projectId={currentProject.projectId} />;
+      case 'tc':       return <TCScreen requirements={extractedReqs} projectId={currentProject.projectId} triggerGenerate={triggerGenerate} onGenerateComplete={() => setTriggerGenerate(false)} />;
       default:         return <UploadScreen onAnalyze={startAnalysis} text={sourceText} setText={handleTextChange} projectId={currentProject.projectId} />;
     }
   };

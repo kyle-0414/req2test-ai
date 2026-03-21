@@ -4,14 +4,18 @@ import { Play, CheckCircle, XCircle, Eye, BarChart3, Clock, Search, Filter, Shie
 import { Badge, PriorityBadge, RunStatusBadge } from '../ui/Badges';
 import { judgeTestResult } from '../../lib/aiClient';
 
-export const TCScreen = ({ requirements = [], projectId }) => {
-  const { testCases, createDrafts, approveTestCase, rejectTestCase, setManualOnly } = useTestCaseReview(projectId);
+export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGenerateComplete }) => {
+  const { testCases, isGenerating, generationError, createDrafts, approveTestCase, rejectTestCase, setManualOnly } = useTestCaseReview(projectId);
 
   useEffect(() => {
-    if (requirements.length > 0 && testCases.length === 0) {
+    // Only generate if explicitly triggered (via the "Finalize to Test Cases" button)
+    if (triggerGenerate && requirements.length > 0 && !isGenerating) {
       createDrafts(projectId, requirements);
+      if (onGenerateComplete) {
+        onGenerateComplete();
+      }
     }
-  }, [requirements, projectId, testCases.length, createDrafts]);
+  }, [requirements, projectId, triggerGenerate, createDrafts, isGenerating, onGenerateComplete]);
 
   const [selectedId, setSelectedId] = useState(null);
 
@@ -80,6 +84,23 @@ export const TCScreen = ({ requirements = [], projectId }) => {
     setRunLog([...currentLogs]);
     setIsRunning(false);
   };
+
+  if (isGenerating) {
+    return (
+      <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+          <div className="spinner" style={{ width: '48px', height: '48px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1e293b', margin: '0 0 8px 0' }}>AI 검증 시나리오 작성 중...</h2>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+              요구사항을 분석하여 QA 테스트 케이스를 생성하고 있습니다.<br/>잠시만 기다려 주세요.
+            </p>
+          </div>
+        </div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   const filteredTcs = testCases.filter(tc => {
     if (statusFilter === 'All') return true;

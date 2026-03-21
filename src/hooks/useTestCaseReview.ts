@@ -2,10 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { TestCaseDraft } from "../features/testcases/model";
 import { RequirementItem } from "../features/requirements/model";
 import { generateDraftTestCases } from "../services/analysis/generateDraftTestCases";
+import { generateDraftTestCasesWithLLM } from "../services/analysis/generateDraftTestCasesWithLLM";
 import { projectStore } from "../services/storage/projectStore";
 
 export function useTestCaseReview(projectId?: string) {
   const [testCases, setTestCases] = useState<TestCaseDraft[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Load initial state
   useEffect(() => {
@@ -25,12 +28,29 @@ export function useTestCaseReview(projectId?: string) {
     }
   }, [projectId]);
 
-  function createDrafts(projectIdArg: string, requirements: RequirementItem[]) {
-    const id = projectId || projectIdArg;
-    const project = projectStore.getProject(id);
-    const globalPreconditions = project?.documentMetadata?.preconditions || [];
-    const drafts = generateDraftTestCases(id, requirements, globalPreconditions);
-    saveTestCases(drafts);
+  async function createDrafts(projectIdArg: string, requirements: RequirementItem[]) {
+    setIsGenerating(true);
+    setGenerationError(null);
+    try {
+      const id = projectId || projectIdArg;
+      const project = projectStore.getProject(id);
+      const globalPreconditions = project?.documentMetadata?.preconditions || [];
+      
+      let drafts: TestCaseDraft[];
+      try {
+        drafts = await generateDraftTestCasesWithLLM(id, requirements, globalPreconditions);
+      } catch (err) {
+        console.warn("LLM TC Generation failed. Falling back to heuristic.", err);
+        drafts = generateDraftTestCases(id, requirements, globalPreconditions);
+      }
+      
+      saveTestCases(drafts);
+    } catch (err) {
+      console.error(err);
+      setGenerationError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   const approveTestCase = useCallback((id: string) => {
@@ -54,9 +74,12 @@ export function useTestCaseReview(projectId?: string) {
 
   return {
     testCases,
+    isGenerating,
+    generationError,
     createDrafts,
     approveTestCase,
     rejectTestCase,
     setManualOnly,
   };
 }
+
