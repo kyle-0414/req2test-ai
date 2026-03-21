@@ -86,9 +86,16 @@ ${text}
   
   let parsed: LLMAnalysisOutput;
   try {
-    parsed = JSON.parse(rawOutStr);
+    // Find the first '{' and last '}' to handle potential conversational prefix/suffix
+    const firstBrace = rawOutStr.indexOf('{');
+    const lastBrace = rawOutStr.lastIndexOf('}');
+    if (firstBrace === -1 || lastBrace === -1) {
+      throw new Error("No JSON object found in response");
+    }
+    const cleanStr = rawOutStr.substring(firstBrace, lastBrace + 1);
+    parsed = JSON.parse(cleanStr);
   } catch (error) {
-    throw new Error("Failed to parse LLM response as JSON");
+    throw new Error("Failed to parse LLM response as JSON: " + rawOutStr);
   }
 
   if (!parsed.requirements || !Array.isArray(parsed.requirements)) {

@@ -2,15 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { useAnalysisFlow } from '../../hooks/useAnalysisFlow';
 import { Search, FileText, CheckCircle, AlertTriangle, Cpu, Layers, Edit2, Filter, BookOpen, Zap, AlertCircle, LayoutList, Check, Target, SlidersHorizontal, Eye, AlignLeft } from 'lucide-react';
 import { Badge, ConfBadge } from '../ui/Badges';
+import { projectStore } from '../../services/storage/projectStore';
 
 export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "doc-001", projectId, sourceName = "PRD_v1.2.pdf", tokens = 2400, isImage = false }) => {
   const { requirements: reqs, summary, runAnalysis, state, updateRequirement, testPoints } = useAnalysisFlow(projectId);
 
+  const hasAttemptedUpgrade = React.useRef(false);
+
   useEffect(() => {
-    if (sourceText && reqs.length === 0 && state === 'idle') {
+    // Determine if we already have "high-quality" (LLM-based) results
+    const hasHighQualityResults = reqs.length > 0 && reqs.some(r => r.id?.startsWith('req-llm-'));
+    const isFallback = summary?.isHeuristicFallback;
+
+    // Only run analysis if we're not currently working on it AND we lack high-quality results
+    // AND we haven't already attempted an upgrade in this session (breaks infinite loop)
+    if (sourceText && state !== 'analyzing' && !hasHighQualityResults && (!isFallback || !hasAttemptedUpgrade.current)) {
+      // guard: check if the store has high-quality data we haven't loaded yet
+      const currentProj = projectStore.getProject(projectId);
+      const storeHasHighQuality = currentProj?.requirements?.some(r => r.id?.startsWith('req-llm-'));
+      
+      if (storeHasHighQuality) {
+        return; // It's already in the store, don't re-trigger
+      }
+      
+      hasAttemptedUpgrade.current = true;
+      console.log("[AnalysisScreen] Triggering/Upgrading to high-quality requirement analysis...");
       runAnalysis(projectId, sourceDocumentId, sourceText);
     }
-  }, [sourceText, sourceDocumentId, projectId, reqs.length, state, runAnalysis]);
+  }, [sourceText, sourceDocumentId, projectId, reqs.length, state, runAnalysis, summary]);
 
   const [selectedReqId, setSelectedReqId] = useState(null);
   const [isOCRMode, setIsOCRMode] = useState(isImage);

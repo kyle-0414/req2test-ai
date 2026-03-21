@@ -53,6 +53,11 @@ export async function analyzeRequirements(
     // Enrich with metadata
     return {
       ...result,
+      summary: {
+        ...result.summary,
+        analysisMethod: 'llm',
+        isHeuristicFallback: false,
+      },
       documentMetadata: metadata,
     };
   } catch (error) {
@@ -96,6 +101,8 @@ export async function analyzeRequirements(
     approvedRequirements: requirements.filter((r) => r.status === "approved").length,
     generatedTestPoints: requirements.length,
     generatedTestCases: requirements.length,
+    analysisMethod: 'heuristic',
+    isHeuristicFallback: true,
   };
 
   return { 

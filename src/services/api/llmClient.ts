@@ -15,8 +15,8 @@ export async function callLLM(request: LLMRequest): Promise<string> {
     throw new Error("Gemini API key is not configured. (VITE_GEMINI_API_KEY is missing)");
   }
 
-  // Use the verified stable Flash model for this environment (2026.03 status)
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+  // Switched to gemini-2.5-flash which has quota and is guaranteed to exist in the 2026 environment!
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
     method: "POST",

@@ -7,12 +7,29 @@ import { generateTestPoints } from "../services/analysis/generateTestPoints";
 import { projectStore } from "../services/storage/projectStore";
 
 export function useAnalysisFlow(projectId?: string) {
-  const [state, setState] = useState<AnalysisFlowState>("idle");
-  const [requirements, setRequirements] = useState<RequirementItem[]>([]);
-  const [testPoints, setTestPoints] = useState<TestPoint[]>([]);
-  const [summary, setSummary] = useState<AnalysisSummary | null>(null);
+  // Initialize state synchronously from store to avoid transient 'idle' state
+  const [initialProject] = useState(() => projectId ? projectStore.getProject(projectId) : null);
+  
+  const [state, setState] = useState<AnalysisFlowState>(() => {
+    if (initialProject && initialProject.requirements && initialProject.requirements.length > 0) {
+      return "analyzed";
+    }
+    return "idle";
+  });
+  
+  const [requirements, setRequirements] = useState<RequirementItem[]>(() => 
+    initialProject?.requirements || []
+  );
+  
+  const [testPoints, setTestPoints] = useState<TestPoint[]>(() => 
+    initialProject?.requirements ? generateTestPoints(initialProject.requirements) : []
+  );
+  
+  const [summary, setSummary] = useState<AnalysisSummary | null>(() => 
+    initialProject?.analysisSummary || null
+  );
 
-  // Load initial state
+  // Sync state if projectId changes later
   useEffect(() => {
     if (projectId) {
       const project = projectStore.getProject(projectId);

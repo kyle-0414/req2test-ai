@@ -16,4 +16,6 @@ export interface AnalysisSummary {
   approvedRequirements: number;
   generatedTestPoints: number;
   generatedTestCases: number;
+  isHeuristicFallback?: boolean;
+  analysisMethod?: 'llm' | 'heuristic';
 }
