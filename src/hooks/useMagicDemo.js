@@ -9,19 +9,24 @@ export const useMagicDemo = (setScreen, setSourceText) => {
   const [demoActive, setDemoActive] = useState(false);
   const [clickCount, setClickCount] = useState(0);
 
-  const typeText = async (targetId, text, speed = 30) => {
+  const typeText = async (targetId, text, speed = 30, append = false) => {
     const element = document.getElementById(targetId);
     if (!element) return;
 
-    element.value = '';
+    if (!append) element.value = '';
+    const initialText = element.value;
+
     for (let i = 0; i < text.length; i++) {
-        const currentText = text.slice(0, i + 1);
+        const currentText = initialText + text.slice(0, i + 1);
         element.value = currentText;
         // Trigger React's onChange
         const event = new Event('input', { bubbles: true });
         element.dispatchEvent(event);
         
-        if (setSourceText) setSourceText(currentText);
+        // Only update source text if it's the main textarea
+        if (targetId === 'manual-input-textarea' && setSourceText) {
+            setSourceText(currentText);
+        }
 
         await new Promise(r => setTimeout(r, speed + Math.random() * 20));
     }
@@ -117,6 +122,20 @@ export const useMagicDemo = (setScreen, setSourceText) => {
           return el && el.getAttribute('data-is-generating') === 'false';
         }, 15000);
         await wait(2000); // Visual pause
+
+        // Step 8: Randomly select few TCs and edit one
+        console.log("...Interacting with TC list");
+        const tcItems = document.querySelectorAll('.tc-queue-item');
+        if (tcItems.length > 0) {
+            // Click 2nd and then 3rd to show selection change
+            if (tcItems[1]) { tcItems[1].click(); await wait(1000); }
+            if (tcItems[2]) { tcItems[2].click(); await wait(1000); }
+            
+            // Edit the expected result of the selected one
+            console.log("...Editing expected result");
+            await typeText('tc-expected-result-textarea', " (추가 검증: 이메일 발송 로그에 'PW_RESET' 태그가 포함되어야 함)", 20, true);
+            await wait(1500);
+        }
 
         // Scroll through TCs to showcase
         const tcQueue = document.getElementById('tc-queue-container');

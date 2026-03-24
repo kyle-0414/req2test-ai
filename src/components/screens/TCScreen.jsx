@@ -202,7 +202,7 @@ export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGene
                 const isApproved = tc.status === 'approved';
                 const isRejected = tc.status === 'rejected';
                 return (
-                  <div key={tc.id} onClick={() => setSelectedId(tc.id)} style={{
+                  <div key={tc.id} className="tc-queue-item" onClick={() => setSelectedId(tc.id)} style={{
                     padding: '14px', borderRadius: '8px', cursor: 'pointer',
                     background: isSelected ? '#ffffff' : (isApproved ? '#fafafa' : '#ffffff'),
                     border: `1px solid ${isSelected ? '#6366f1' : 'transparent'}`,
@@ -319,11 +319,11 @@ export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGene
                       <CheckCircle size={16} color="#059669" /> Expected Result
                     </div>
                     <div style={{ background: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.01)' }}>
-                       <textarea style={{
-                        width: '100%', minHeight: '60px', padding: '0', border: 'none',
-                        background: 'transparent', fontSize: '13.5px', fontWeight: '500',
-                        color: '#065f46', resize: 'vertical', outline: 'none', lineHeight: '1.6'
-                      }} defaultValue={selected.expectedResults?.[0]?.description || 'Result not defined.'} />
+                        <textarea id="tc-expected-result-textarea" style={{
+                          width: '100%', minHeight: '60px', padding: '0', border: 'none',
+                          background: 'transparent', fontSize: '13.5px', fontWeight: '500',
+                          color: '#065f46', resize: 'vertical', outline: 'none', lineHeight: '1.6'
+                        }} defaultValue={selected.expectedResults?.[0]?.description || 'Result not defined.'} />
                     </div>
                   </div>
 
