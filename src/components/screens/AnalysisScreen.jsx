@@ -116,7 +116,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
   };
 
   return (
-    <div className="animate-in" style={{ 
+    <div className="animate-in" data-status={state} style={{ 
       display: 'flex', flexDirection: 'column', height: '100%', 
       background: '#f8fafc', fontFamily: 'Inter, sans-serif'
     }}>
@@ -187,7 +187,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
             borderRadius: '6px', padding: '8px 18px', fontSize: '13px', fontWeight: '600',
             display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
             boxShadow: '0 2px 4px rgba(79,70,229,0.15)', transition: 'background 0.2s'
-          }} onClick={handleFinalizeClick} onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}>
+          }} id="finalize-tc-btn" onClick={handleFinalizeClick} onMouseEnter={e=>e.currentTarget.style.background='#4338ca'} onMouseLeave={e=>e.currentTarget.style.background='#4f46e5'}>
             <CheckCircle size={14} /> Finalize to Test Cases
           </button>
         </div>
@@ -307,7 +307,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
               const barColor = isSelected ? '#4f46e5' : isApproved ? '#059669' : isReview ? '#d97706' : isExcluded ? '#94a3b8' : '#e2e8f0';
 
               return (
-                <div key={req.id} onClick={() => !isExcluded && setSelectedReqId(req.id)} style={{
+                <div key={req.id} className="analysis-queue-item" onClick={() => !isExcluded && setSelectedReqId(req.id)} style={{
                   padding: '14px 16px', borderRadius: '8px', cursor: isExcluded ? 'default' : 'pointer',
                   background: '#ffffff',
                   border: `1px solid ${isSelected ? '#4f46e5' : '#e2e8f0'}`,
@@ -432,7 +432,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
               </div>
 
               {/* Scrollable Content */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '28px 28px 28px 28px', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '32px', background: '#f8fafc' }}>
+              <div id="analysis-detail-scroll" style={{ flex: 1, overflowY: 'auto', padding: '28px 28px 28px 28px', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '32px', background: '#f8fafc' }}>
                 
                 {/* Section B: Requirement Text Block */}
                 <div style={{ flexShrink: 0 }}>
@@ -641,6 +641,7 @@ export const AnalysisScreen = ({ onGenerateTC, sourceText, sourceDocumentId = "d
                       </button>
                     ) : (
                       <button
+                        id="approve-req-btn"
                         className="btn-tooltip"
                         onClick={() => updateRequirement({ ...selectedReq, status: 'approved' })}
                         style={{

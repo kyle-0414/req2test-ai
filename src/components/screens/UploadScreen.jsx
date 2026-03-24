@@ -310,6 +310,7 @@ export const UploadScreen = ({ onAnalyze, text, setText, projectId }) => {
 
           <div style={{ padding: '32px', flex: 1, display: 'flex', flexDirection: 'column', background: '#ffffff' }}>
             <textarea
+              id="manual-input-textarea"
               style={{
                 flex: 1, width: '100%', minHeight: '260px',
                 border: 'none',
@@ -331,6 +332,7 @@ export const UploadScreen = ({ onAnalyze, text, setText, projectId }) => {
                 {text.length === 0 ? '0 characters' : `${text.length} characters`} · AI is ready
               </span>
               <button
+                id="analyze-text-btn"
                 onClick={() => onAnalyze(text)}
                 disabled={text.length === 0}
                 style={{

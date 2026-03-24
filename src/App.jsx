@@ -6,6 +6,7 @@ import { UploadScreen } from './components/screens/UploadScreen';
 import { AnalysisScreen } from './components/screens/AnalysisScreen';
 import { TCScreen } from './components/screens/TCScreen';
 import { projectStore } from './services/storage/projectStore';
+import { useMagicDemo } from './hooks/useMagicDemo';
 
 export default function App() {
   const [screen, setScreen] = useState('upload');
@@ -16,6 +17,8 @@ export default function App() {
   const [extractedReqs, setExtractedReqs] = useState([]);
   const [triggerGenerate, setTriggerGenerate] = useState(false);
   const [sourceInfo, setSourceInfo] = useState({ name: 'Manual Input', type: 'text', id: 'doc-001', tokens: 0 });
+
+  const { demoActive } = useMagicDemo(setScreen, setSourceText);
 
   // Initial restoration
   useEffect(() => {
@@ -134,6 +137,25 @@ export default function App() {
           </AnimatePresence>
         </main>
       </div>
+
+      {demoActive && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px',
+          background: 'rgba(79, 70, 229, 0.95)', color: '#fff',
+          padding: '12px 24px', borderRadius: '12px',
+          fontWeight: '700', fontSize: '14px', zIndex: 1000,
+          boxShadow: '0 8px 32px rgba(79, 70, 229, 0.4)',
+          backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)',
+          display: 'flex', alignItems: 'center', gap: '10px',
+          animation: 'pulse-glow 2s infinite'
+        }}>
+          <span style={{ width: 8, height: 8, background: '#4ade80', borderRadius: '50%' }}></span>
+          DEMO MODE ACTIVE
+          <style>{`
+            @keyframes pulse-glow { 0% { opacity: 0.8; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); } 100% { opacity: 0.8; transform: scale(0.98); } }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }

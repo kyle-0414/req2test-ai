@@ -4,6 +4,12 @@ import { Play, CheckCircle, XCircle, Eye, BarChart3, Clock, Search, Filter, Shie
 import { Badge, PriorityBadge, RunStatusBadge } from '../ui/Badges';
 import { judgeTestResult } from '../../lib/aiClient';
 
+// Helper: convert internal TC ID → user-facing display ID (TC-001 format)
+const getDisplayId = (tcId, tcList) => {
+  const idx = tcList.findIndex(t => t.id === tcId);
+  return idx >= 0 ? `TC-${String(idx + 1).padStart(3, '0')}` : tcId;
+};
+
 export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGenerateComplete }) => {
   const { testCases, isGenerating, generationError, createDrafts, approveTestCase, rejectTestCase, setManualOnly } = useTestCaseReview(projectId);
 
@@ -112,7 +118,7 @@ export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGene
   });
 
   return (
-    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
+    <div className="animate-in" data-is-generating={isGenerating} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
       
       {/* Top Toolbar */}
       <div style={{
@@ -190,7 +196,7 @@ export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGene
               </div>
             </div>
             
-            <div style={{ padding: '12px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div id="tc-queue-container" style={{ padding: '12px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {filteredTcs.map(tc => {
                 const isSelected = selectedId === tc.id;
                 const isApproved = tc.status === 'approved';
@@ -206,7 +212,7 @@ export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGene
                     opacity: isRejected ? 0.5 : 1, transition: 'all 0.15s ease'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: isSelected ? '#4f46e5' : '#475569', fontFamily: 'monospace' }}>{tc.id}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: isSelected ? '#4f46e5' : '#475569', fontFamily: 'monospace' }}>{getDisplayId(tc.id, testCases)}</span>
                       <div style={{ display: 'flex', gap: '6px' }}>
                          {tc.automationCandidate && <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: '#eef2ff', color: '#4f46e5', borderRadius: '4px', border: '1px solid #e0e7ff' }}>Auto Candidate</span>}
                          <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', background: isApproved ? '#ecfdf5' : '#f1f5f9', color: isApproved ? '#059669' : '#64748b', borderRadius: '4px', border: `1px solid ${isApproved ? '#d1fae5' : '#e2e8f0'}`, textTransform: 'capitalize' }}>
@@ -214,10 +220,13 @@ export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGene
                          </span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '600', lineHeight: '1.4' }}>
+                    <div style={{ 
+                      fontSize: '13px', color: '#0f172a', fontWeight: '600', lineHeight: '1.4',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                    }}>
                       {tc.title}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
                       {tc.objective || tc.expectedResults?.[0]?.description}
                     </div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
@@ -243,7 +252,7 @@ export const TCScreen = ({ requirements = [], projectId, triggerGenerate, onGene
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                       <div style={{ flex: 1, paddingRight: '24px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', fontFamily: 'monospace' }}>{selected.id}</span>
+                          <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', fontFamily: 'monospace' }}>{getDisplayId(selected.id, testCases)}</span>
                           <span style={{ fontSize: '11px', color: '#94a3b8' }}>•</span>
                           <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Priority: <strong style={{ color: selected.priority === 'high' ? '#ef4444' : '#64748b', textTransform: 'capitalize' }}>{selected.priority || 'Medium'}</strong></span>
                         </div>

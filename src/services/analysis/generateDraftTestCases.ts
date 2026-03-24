@@ -44,17 +44,18 @@ export function generateDraftTestCases(
   globalPreconditions: string[] = []
 ): TestCaseDraft[] {
   return requirements.map((req, index) => {
-    // 1. Title: Use the normalized text (should already be a scenario title from LLM)
-    let title = req.normalizedText;
-    // Fallback if title is too long or not scenario-formatted
-    if (!title.includes("검증") && title.length > 30) {
-      title = `${req.normalizedText.substring(0, 25)}... 검증`;
-    }
+    // 1. Title: Use the normalized text
+    const title = req.normalizedText;
 
     // 2. Objective
     const objective = `${req.normalizedText} 시나리오가 시스템 요구사항에 따라 올바르게 동작하는지 확인한다.`;
     
-    // 3. Preconditions: Combine global and requirement-specific ones
+    // 3. Priority: Adjust based on type if unspecified
+    let priority = req.priority || "medium";
+    if (req.type === "exception") priority = "high";
+    if (req.type === "display") priority = "low";
+
+    // Preconditions: Combine global and requirement-specific ones
     const preconditions = [...(req.preconditions || []), ...globalPreconditions];
     if (preconditions.length === 0) {
       preconditions.push("시스템에 정상적으로 접근 가능한 상태여야 한다.");
@@ -71,9 +72,15 @@ export function generateDraftTestCases(
           order: i + 1, 
           action: `${point} 항목에 대한 조작 또는 상태를 확인한다.` 
         });
+        
+        let resultDesc = `${point} 결과값이 기대사항과 일치해야 한다.`;
+        if (req.type === 'exception') resultDesc = `해당 조건 부합 시 ${point} 에러 메시지 또는 예외 처리가 정상적으로 수행되어야 한다.`;
+        if (req.type === 'display') resultDesc = `화면상에 ${point} 정보가 위치에 맞게 정확히 표시되어야 한다.`;
+        if (req.type === 'screen_navigation') resultDesc = `해당 동작 후 ${point} 화면으로 정상 전환되어야 한다.`;
+
         expectedResults.push({ 
           order: i + 1, 
-          description: `${point} 결과값이 기대사항과 일치해야 한다.` 
+          description: resultDesc
         });
       });
     } else {
@@ -83,7 +90,9 @@ export function generateDraftTestCases(
       
       expectedResults.push({ 
         order: 1, 
-        description: `${req.normalizedText} 요구사항이 화면에 올바르게 적용되어 정상 동작해야 한다.` 
+        description: req.type === 'exception' 
+            ? `${req.normalizedText} 상황에 대응하는 에러 핸들링이 발생해야 한다.`
+            : `${req.normalizedText} 요구사항이 화면에 올바르게 적용되어 정상 동작해야 한다.`
       });
     }
 
@@ -96,7 +105,7 @@ export function generateDraftTestCases(
       preconditions,
       steps,
       expectedResults,
-      priority: req.priority,
+      priority,
       status: "draft",
       automationCandidate: req.automationCandidate,
       automationSuitability: {

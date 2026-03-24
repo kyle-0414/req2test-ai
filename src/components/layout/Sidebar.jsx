@@ -17,7 +17,7 @@ const NavItem = ({ icon, label, badge, active, onClick, disabled }) => (
 export const Sidebar = ({ screen, setScreen }) => {
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo">
+      <div className="sidebar-logo" id="sidebar-logo" style={{ cursor: 'pointer' }}>
         <div className="sidebar-logo-icon">
           <BarChart3 size={17} color="#fff" />
         </div>
